@@ -78,6 +78,7 @@ function(ExternalContent)
 	if(TRUE) # Parse and validate the arguments
 		set(_EC_PREFIX "${CMAKE_BINARY_DIR}/ExternalContent.dir")
 		set(_EC_TEMP_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.tmp")
+		set(_EC_CONFIGURE_SUFFIX "")
 		set(_EC_SOURCE_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.src")
 		set(_EC_BINARY_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.bin")
 		set(_EC_INSTALL_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.dist")
@@ -146,6 +147,12 @@ function(ExternalContent)
 			## (git) Git reference to clone/checkout.
 			# Required.
 			"GIT_REF"
+
+			## Where in the downloaded directory is the actual content located?
+			# Some projects store their key configuration files outside of the parent tree.
+			#
+			# Optional.
+			"CONFIGURE_SUFFIX"
 
 			## Provide a custom function for the configure step.
 			# This function is expected to message(FATAL_ERROR) if an error occurs.
@@ -442,11 +449,11 @@ function(ExternalContent)
 	if(NOT _EC_SKIP_CONFIGURE)
 		if(_EC_CONFIGURE_FUNCTION)
 			cmake_language(EVAL CODE "${_EC_CONFIGURE_FUNCTION}(\"${EC_TEMP_PATH}\" \"${_EC_SOURCE_PATH}\" \"${_EC_BINARY_PATH}\" \"${_EC_INSTALL_PATH}\")")
-		elseif(EXISTS "${_EC_SOURCE_PATH}/CMakeLists.txt")
+		elseif(EXISTS "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}CMakeLists.txt")
 			# This is a CMake project.
 
-			set(_EC_CMAKE_ARGS
-				-S "${_EC_SOURCE_PATH}"
+			set(_EC_CONFIGURE_ARGS
+				-S "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}"
 				-B "${_EC_BINARY_PATH}"
 				-Wno-dev
 				--no-warn-unused-cli
@@ -455,7 +462,7 @@ function(ExternalContent)
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${_EC_CMAKE_ARGS}")
+			string(SHA3_512 _EC_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${_EC_CONFIGURE_ARGS}")
 
 			# Ensure we don't spawn useless sub-processes all the time.
 			if(EXISTS "${_EC_BINARY_PATH}/CMakeCache.txt")
@@ -472,8 +479,45 @@ function(ExternalContent)
 			# Configure & Generate
 			if(_EC_CONFIGURE_DIRTY)
 				execute_process(
-					COMMAND "cmake" ${_EC_CMAKE_ARGS}
-					WORKING_DIRECTORY "${_EC_SOURCE_PATH}"
+					COMMAND "cmake" ${_EC_CONFIGURE_ARGS}
+					WORKING_DIRECTORY "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}"
+					COMMAND_ECHO STDOUT
+				)
+
+				# Write the hash to the cache file.
+				file(WRITE "${_EC_TEMP_PATH}/configure.sha3" "${_EC_CONFIGURE_ARGS_HASH}")
+			else()
+				message(STATUS "[EC: ${_EC_NAME}] Skipping configure as nothing has changed.")
+			endif()
+		elseif(EXISTS "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}meson.build")
+			# This is a meson project.
+
+			set(_EC_CONFIGURE_ARGS
+				setup build
+				--prefix "${_EC_INSTALL_PATH}"
+				${_EC_CONFIGURE_ARGS}
+			)
+
+			# Hash the given options.
+			string(SHA3_512 _EC_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${_EC_CONFIGURE_ARGS}")
+
+			# Ensure we don't spawn useless sub-processes all the time.
+			if(EXISTS "${_EC_BINARY_PATH}/CMakeCache.txt")
+				if(EXISTS "${_EC_TEMP_PATH}/configure.sha3")
+					file(READ "${_EC_TEMP_PATH}/configure.sha3" _EC_HASH_CMP)
+					if(NOT (_EC_HASH_CMP STREQUAL _EC_CONFIGURE_ARGS_HASH))
+						set(_EC_CONFIGURE_DIRTY ON)
+					endif()
+				endif()
+			else()
+				set(_EC_CONFIGURE_DIRTY ON)
+			endif()
+
+			# Configure & Generate
+			if(_EC_CONFIGURE_DIRTY)
+				execute_process(
+					COMMAND "meson" ${_EC_CONFIGURE_ARGS}
+					WORKING_DIRECTORY "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}"
 					COMMAND_ECHO STDOUT
 				)
 
@@ -495,13 +539,13 @@ function(ExternalContent)
 		elseif(EXISTS "${_EC_SOURCE_PATH}/CMakeLists.txt")
 			# This is a CMake project.
 
-			set(_EC_CMAKE_ARGS
+			set(_EC_BUILD_ARGS
 				"--build" "${_EC_BINARY_PATH}"
 				${_EC_BUILD_ARGS}
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_CMAKE_ARGS}")
+			string(SHA3_512 _EC_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_BUILD_ARGS}")
 
 			# Ensure we don't spawn useless sub-processes all the time.
 			if(EXISTS "${_EC_TEMP_PATH}/build.sha3")
@@ -516,7 +560,41 @@ function(ExternalContent)
 			# Build
 			if(_EC_BUILD_DIRTY)
 				execute_process(
-					COMMAND "cmake" ${_EC_CMAKE_ARGS}
+					COMMAND "cmake" ${_EC_BUILD_ARGS}
+					WORKING_DIRECTORY "${_EC_BINARY_PATH}"
+					COMMAND_ECHO STDOUT
+				)
+
+				# Write the hash to the cache file.
+				file(WRITE "${_EC_TEMP_PATH}/build.sha3" "${_EC_BUILD_ARGS_HASH}")
+			else()
+				message(STATUS "[EC: ${_EC_NAME}] Skipping build as nothing has changed.")
+			endif()
+		elseif(EXISTS "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}meson.build")
+			# This is a meson project.
+
+			set(_EC_BUILD_ARGS
+				"--build" "${_EC_BINARY_PATH}"
+				${_EC_BUILD_ARGS}
+			)
+
+			# Hash the given options.
+			string(SHA3_512 _EC_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_BUILD_ARGS}")
+
+			# Ensure we don't spawn useless sub-processes all the time.
+			if(EXISTS "${_EC_TEMP_PATH}/build.sha3")
+				file(READ "${_EC_TEMP_PATH}/build.sha3" _EC_HASH_CMP)
+				if(NOT (_EC_HASH_CMP STREQUAL _EC_BUILD_ARGS_HASH))
+					set(_EC_BUILD_DIRTY ON)
+				endif()
+			else()
+				set(_EC_BUILD_DIRTY ON)
+			endif()
+
+			# Build
+			if(_EC_BUILD_DIRTY)
+				execute_process(
+					COMMAND "meson" ${_EC_BUILD_ARGS}
 					WORKING_DIRECTORY "${_EC_BINARY_PATH}"
 					COMMAND_ECHO STDOUT
 				)
