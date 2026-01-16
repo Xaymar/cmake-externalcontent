@@ -490,4 +490,8 @@ function(ExternalContent)
 			message(FATAL_ERROR "[EC: ${_EC_NAME}] We don't know how to handle this install system yet. Consider using INSTALL_FUNCTION or SKIP_INSTALL.")
 		endif()
 	endif()
+
+	set(${_EC_NAME}_SOURCE_PATH "${_EC_SOURCE_PATH}" PARENT_SCOPE)
+	set(${_EC_NAME}_BINARY_PATH "${_EC_BINARY_PATH}" PARENT_SCOPE)
+	set(${_EC_NAME}_INSTALL_PATH "${_EC_INSTALL_PATH}" PARENT_SCOPE)
 endfunction()
