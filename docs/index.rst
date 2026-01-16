@@ -81,7 +81,7 @@ Optional. Specifies where we should store any temporary files for this external 
 .. _SOURCE_PATH:
 
 SOURCE_PATH:
----------
+------------
 
 .. code-block:: cmake
 
@@ -92,7 +92,7 @@ Optional. Specifies where the source should be extracted to. Can be used with `S
 .. _BINARY_PATH:
 
 BINARY_PATH:
----------
+------------
 
 .. code-block:: cmake
 
@@ -103,7 +103,7 @@ Optional. Specifies where the build files should be located.
 .. _INSTALL_PATH:
 
 INSTALL_PATH:
----------
+-------------
 
 .. code-block:: cmake
 
@@ -132,7 +132,7 @@ From File
 .. _DOWNLOAD_URL:
 
 DOWNLOAD_URL
-#############
+############
 
 .. code-block:: cmake
 
@@ -168,7 +168,7 @@ From Git Repository
 .. _GIT_URL:
 
 GIT_URL
-#############
+#######
 
 .. code-block:: cmake
 
@@ -179,7 +179,7 @@ Optional. Downloads the source code from a given git repository url.
 .. _GIT_REF:
 
 GIT_REF
-#############
+#######
 
 .. code-block:: cmake
 
@@ -190,7 +190,7 @@ Required if `GIT_URL`_ is provided. Must be either a branch, tag, or commit hash
 .. _GIT_CLONE_OPTIONS:
 
 GIT_CLONE_OPTIONS
-#############
+#################
 
 .. code-block:: cmake
 
@@ -201,7 +201,7 @@ Optional. One or more options that are passed through to git-clone.
 .. _GIT_CHECKOUT_OPTIONS:
 
 GIT_CHECKOUT_OPTIONS
-#############
+####################
 
 .. code-block:: cmake
 
@@ -215,7 +215,7 @@ Configuring
 .. _SKIP_CONFIGURE:
 
 SKIP_CONFIGURE:
----------
+---------------
 
 .. code-block:: cmake
 
@@ -226,7 +226,7 @@ Optional. Skips the entire configure section.
 .. _CONFIGURE_FUNCTION:
 
 CONFIGURE_FUNCTION:
----------
+-------------------
 
 .. code-block:: cmake
 
@@ -243,7 +243,7 @@ Optional. Specify a custom function to be used to configure this external conten
 .. _CONFIGURE_ARGS:
 
 CONFIGURE_ARGS:
----------
+---------------
 
 .. code-block:: cmake
 
@@ -257,7 +257,7 @@ Building
 .. _SKIP_BUILD:
 
 SKIP_BUILD:
----------
+-----------
 
 .. code-block:: cmake
 
@@ -268,7 +268,7 @@ Optional. Skips the entire build section.
 .. _BUILD_FUNCTION:
 
 BUILD_FUNCTION:
----------
+---------------
 
 .. code-block:: cmake
 
@@ -285,7 +285,7 @@ Optional. Specify a custom function to be used to build this external content in
 .. _BUILD_ARGS:
 
 BUILD_ARGS:
----------
+-----------
 
 .. code-block:: cmake
 
@@ -299,7 +299,7 @@ Installing
 .. _SKIP_INSTALL:
 
 SKIP_INSTALL:
----------
+-------------
 
 .. code-block:: cmake
 
@@ -310,7 +310,7 @@ Optional. Skips the entire install section.
 .. _INSTALL_FUNCTION:
 
 INSTALL_FUNCTION:
----------
+-----------------
 
 .. code-block:: cmake
 
@@ -327,10 +327,18 @@ Optional. Specify a custom function to be used to install this external content 
 .. _INSTALL_ARGS:
 
 INSTALL_ARGS:
----------
+-------------
 
 .. code-block:: cmake
 
 	ExternalContent(... INSTALL_ARGS <option> [<option> [...]] ...)
 
 Optional. Arguments to pass to the default install handler. Can be specified multiple times or have several options chained after another.
+
+-------
+Exports
+-------
+
+<name>_SOURCE_PATH
+<name>_BINARY_PATH
+<name>_INSTALL_PATH
