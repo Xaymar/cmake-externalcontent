@@ -1,0 +1,38 @@
+name: Automated Testing
+
+on:
+  push:
+    branches:
+      - '*'
+      - '!documentation'
+    paths:
+      - '.github/workflows/test.yml'
+      - 'tests/**'
+      - 'version.cmake'
+  pull_request:
+    paths:
+      - '.github/workflows/test.yml'
+      - 'tests/**'
+      - 'version.cmake'
+
+jobs:
+  test:
+    name: "Run Tests"
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Clone"
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: "Install Prerequisites"
+      shell: bash
+      run: |
+        sudo apt-get install build-essential cmake
+
+    - name: "Run Tests"
+      shell: bash
+      run: |
+        cmake -Htests -Bbuild/tests
+
