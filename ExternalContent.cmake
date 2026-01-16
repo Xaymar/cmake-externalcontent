@@ -55,8 +55,6 @@ function(ExternalContent)
 	if(TRUE) # Resolve dependencies
 		# Dependency: Git
 		find_package(Git QUIET)
-		# Dependency: CMake
-		find_package(Cmake QUIET)
 	endif()
 
 	if(TRUE) # Generate a UUID once for each fresh build to ensure that there's no collisions.
@@ -90,6 +88,9 @@ function(ExternalContent)
 
 			## Skip the configure step entirely.
 			"SKIP_CONFIGURE"
+
+			## Skip the patch step entirely.
+			"SKIP_PATCH"
 
 			## Skip the build step entirely.
 			"SKIP_BUILD"
@@ -156,6 +157,17 @@ function(ExternalContent)
 			#
 			# Optional.
 			"CONFIGURE_FUNCTION"
+
+			## Provide a custom function for the patch step.
+			# This function is expected to message(FATAL_ERROR) if an error occurs.
+			#
+			# Function Signature:
+			#   function(my_custom_patch NAME SOURCE_PATH BINARY_PATH INSTALL_PATH)
+			#     # ...
+			#   endfunction()
+			#
+			# Optional.
+			"PATCH_FUNCTION"
 
 			## Provide a custom function for the build step.
 			# This function is expected to message(FATAL_ERROR) if an error occurs.
@@ -308,6 +320,8 @@ function(ExternalContent)
 			endif()
 
 			if(_EC_DOWNLOAD_DIRTY)
+				message(STATUS "[EC: ${_EC_NAME}] Downloading '${_EC_DOWNLOAD_FILE}' from '${_EC_DOWNLOAD_URL}'...")
+
 				# Download the new file.
 				file(DOWNLOAD "${_EC_DOWNLOAD_URL}" "${_EC_DOWNLOAD_OBJECT}" SHOW_PROGRESS)
 
@@ -315,7 +329,7 @@ function(ExternalContent)
 				if(_EC_DOWNLOAD_HASH)
 					file(${_EC_DOWNLOAD_HASH_TYPE} ${_EC_DOWNLOAD_OBJECT} _EC_DOWNLOAD_OBJECT_HASH)
 					if(NOT (_EC_DOWNLOAD_OBJECT_HASH STREQUAL _EC_DOWNLOAD_HASH_HASH)) # File hash differs.
-#						file(REMOVE "${_EC_DOWNLOAD_OBJECT}")
+						file(REMOVE "${_EC_DOWNLOAD_OBJECT}")
 						message(FATAL_ERROR "[EC: ${_EC_NAME}] Downloaded file has hash '${_EC_DOWNLOAD_OBJECT_HASH}' but expected hash '${_EC_DOWNLOAD_HASH_HASH}'. Aborting.")
 					endif()
 				endif()
@@ -335,35 +349,78 @@ function(ExternalContent)
 				message(STATUS "[EC: ${_EC_NAME}] Skipping download as nothing has changed.")
 			endif()
 		elseif(_EC_GIT_URL) # git: Clone or Checkout to the specific repository.
-			# Delete directory if it isn't a git repository.
-			if((EXISTS "${_EC_SOURCE_PATH}") AND (NOT EXISTS "${_EC_SOURCE_PATH}/.git"))
-				file(REMOVE_RECURSE "${_EC_SOURCE_PATH}")
+			set(_EC_GIT_CLONE_ARGS
+				clone
+				${_EC_GIT_CLONE_OPTIONS}
+				-v
+				"${_EC_GIT_URL}"
+				"${_EC_SOURCE_PATH}"
+			)
+			set(_EC_GIT_CHECKOUT_ARGS
+				checkout
+				${_EC_GIT_CHECKOUT_OPTIONS}
+				-f
+				${_EC_GIT_REF}
+			)
+
+			# Hash the given options.
+			string(SHA3_512 _EC_GIT_CLONE_ARGS_HASH "${_EC_SOURCE_PATH} ${_EC_GIT_CLONE_ARGS}")
+			string(SHA3_512 _EC_GIT_CHECKOUT_ARGS_HASH "${_EC_SOURCE_PATH} ${_EC_GIT_CHECKOUT_ARGS}")
+
+			# Ensure that the commands still match up.
+			if(EXISTS "${_EC_TEMP_PATH}/git-clone.sha3")
+				file(READ "${_EC_TEMP_PATH}/git-clone.sha3" _EC_DOWNLOAD_ARGS_HASH_CMP)
+				if(NOT (_EC_DOWNLOAD_ARGS_HASH_CMP STREQUAL _EC_DOWNLOAD_ARGS_HASH))
+					set(_EC_DOWNLOAD_CLONE_DIRTY ON)
+					set(_EC_DOWNLOAD_DIRTY ON)
+				endif()
+			else()
+				set(_EC_DOWNLOAD_CLONE_DIRTY ON)
+				set(_EC_DOWNLOAD_DIRTY ON)
+			endif()
+			if(EXISTS "${_EC_TEMP_PATH}/git-checkout.sha3")
+				file(READ "${_EC_TEMP_PATH}/git-checkout.sha3" _EC_DOWNLOAD_ARGS_HASH_CMP)
+				if(NOT (_EC_DOWNLOAD_ARGS_HASH_CMP STREQUAL _EC_DOWNLOAD_ARGS_HASH))
+					set(_EC_DOWNLOAD_DIRTY ON)
+				endif()
+			else()
 				set(_EC_DOWNLOAD_DIRTY ON)
 			endif()
 
-			# Does the directory already exist?
-			if(NOT EXISTS "${_EC_SOURCE_PATH}")
-				file(MAKE_DIRECTORY "${_EC_SOURCE_PATH}")
+			# Delete the directory if the clone args are dirty or if the directory isn't a git repository
+			if((EXISTS "${_EC_SOURCE_PATH}") AND (_EC_DOWNLOAD_CLONE_DIRTY OR (NOT EXISTS "${_EC_SOURCE_PATH}/.git")))
+				file(REMOVE_RECURSE "${_EC_SOURCE_PATH}")
 				set(_EC_DOWNLOAD_DIRTY ON)
 			endif()
+			if(NOT EXISTS "${_EC_SOURCE_PATH}")
+				# If the directory doesn't exist, we'll treat it as dirty and create it.
+				set(_EC_DOWNLOAD_DIRTY ON)
+				file(MAKE_DIRECTORY "${_EC_SOURCE_PATH}")
+			endif()
+
+			#!TODO: Reduce complex git commands?
 
 			if(_EC_DOWNLOAD_DIRTY)
 				# Do we need to clone or checkout?
 				if(NOT EXISTS "${_EC_SOURCE_PATH}/.git")
 					message(STATUS "[EC: ${_EC_NAME}] Cloning via git...")
 					execute_process(
-						COMMAND "${GIT_EXECUTABLE}" clone ${_EC_GIT_CLONE_OPTIONS} -v "${_EC_GIT_URL}" "${_EC_SOURCE_PATH}"
+						COMMAND "${GIT_EXECUTABLE}" ${_EC_GIT_CLONE_ARGS}
 						WORKING_DIRECTORY "${_EC_SOURCE_PATH}"
-	#					COMMAND_ECHO STDOUT
+						COMMAND_ECHO STDOUT
 					)
 				else()
 					message(STATUS "[EC: ${_EC_NAME}] Checking out via git...")
 					execute_process(
-						COMMAND "${GIT_EXECUTABLE}" checkout ${_EC_GIT_CHECKOUT_OPTIONS} -f ${_EC_GIT_REF}
+						COMMAND "${GIT_EXECUTABLE}" ${_EC_GIT_CHECKOUT_ARGS}
 						WORKING_DIRECTORY "${_EC_SOURCE_PATH}"
-	#					COMMAND_ECHO STDOUT
+						COMMAND_ECHO STDOUT
 					)
 				endif()
+
+				# Write the hash to the cache file.
+				file(WRITE "${_EC_TEMP_PATH}/git-clone.sha3" "${_EC_GIT_CLONE_ARGS_HASH}")
+				file(WRITE "${_EC_TEMP_PATH}/git-checkout.sha3" "${_EC_GIT_CHECKOUT_ARGS_HASH}")
 			else()
 				message(STATUS "[EC: ${_EC_NAME}] Skipping download as nothing has changed.")
 			endif()
@@ -372,16 +429,32 @@ function(ExternalContent)
 		endif()
 	endif()
 
+	set(_EC_PATCH_DIRTY ${_EC_DOWNLOAD_DIRTY})
+	if(NOT _EC_SKIP_PATCH)
+		if(_EC_PATCH_FUNCTION)
+			cmake_language(EVAL CODE "${_EC_PATCH_FUNCTION}(\"${EC_TEMP_PATH}\" \"${_EC_SOURCE_PATH}\" \"${_EC_BINARY_PATH}\" \"${_EC_INSTALL_PATH}\")")
+		endif()
+	endif()
+
 	# Configure
-	set(_EC_CONFIGURE_DIRTY ${_EC_DOWNLOAD_DIRTY})
+	set(_EC_CONFIGURE_DIRTY ${_EC_PATCH_DIRTY})
 	if(NOT _EC_SKIP_CONFIGURE)
 		if(_EC_CONFIGURE_FUNCTION)
 			cmake_language(EVAL CODE "${_EC_CONFIGURE_FUNCTION}(\"${EC_TEMP_PATH}\" \"${_EC_SOURCE_PATH}\" \"${_EC_BINARY_PATH}\" \"${_EC_INSTALL_PATH}\")")
 		elseif(EXISTS "${_EC_SOURCE_PATH}/CMakeLists.txt")
 			# This is a CMake project.
 
+			set(_EC_CMAKE_ARGS
+				-S "${_EC_SOURCE_PATH}"
+				-B "${_EC_BINARY_PATH}"
+				-Wno-dev
+				--no-warn-unused-cli
+				--install-prefix "${_EC_INSTALL_PATH}"
+				${_EC_CONFIGURE_ARGS}
+			)
+
 			# Hash the given options.
-			string(SHA3_512 _EC_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} -Wno-dev ${_EC_CONFIGURE_ARGS}")
+			string(SHA3_512 _EC_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${_EC_CMAKE_ARGS}")
 
 			# Ensure we don't spawn useless sub-processes all the time.
 			if(EXISTS "${_EC_BINARY_PATH}/CMakeCache.txt")
@@ -398,9 +471,9 @@ function(ExternalContent)
 			# Configure & Generate
 			if(_EC_CONFIGURE_DIRTY)
 				execute_process(
-					COMMAND "cmake" -S "${_EC_SOURCE_PATH}" -B "${_EC_BINARY_PATH}" --install-prefix "${_EC_INSTALL_PATH}" -Wno-dev ${_EC_CONFIGURE_ARGS}
+					COMMAND "cmake" ${_EC_CMAKE_ARGS}
 					WORKING_DIRECTORY "${_EC_SOURCE_PATH}"
-#					COMMAND_ECHO STDOUT
+					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
@@ -421,8 +494,13 @@ function(ExternalContent)
 		elseif(EXISTS "${_EC_SOURCE_PATH}/CMakeLists.txt")
 			# This is a CMake project.
 
+			set(_EC_CMAKE_ARGS
+				"--build" "${_EC_BINARY_PATH}"
+				${_EC_BUILD_ARGS}
+			)
+
 			# Hash the given options.
-			string(SHA3_512 _EC_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_BUILD_ARGS}")
+			string(SHA3_512 _EC_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_CMAKE_ARGS}")
 
 			# Ensure we don't spawn useless sub-processes all the time.
 			if(EXISTS "${_EC_TEMP_PATH}/build.sha3")
@@ -437,9 +515,9 @@ function(ExternalContent)
 			# Build
 			if(_EC_BUILD_DIRTY)
 				execute_process(
-					COMMAND "cmake" --build "${_EC_BINARY_PATH}" ${_EC_BUILD_ARGS}
+					COMMAND "cmake" ${_EC_CMAKE_ARGS}
 					WORKING_DIRECTORY "${_EC_BINARY_PATH}"
-#					COMMAND_ECHO STDOUT
+					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
@@ -460,8 +538,14 @@ function(ExternalContent)
 		elseif(EXISTS "${_EC_SOURCE_PATH}/CMakeLists.txt")
 			# This is a CMake project.
 
+			set(_EC_CMAKE_ARGS
+				--install "${_EC_BINARY_PATH}"
+				--prefix "${_EC_INSTALL_PATH}"
+				${_EC_INSTALL_ARGS}
+			)
+
 			# Hash the given options.
-			string(SHA3_512 _EC_INSTALL_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_INSTALL_ARGS}")
+			string(SHA3_512 _EC_INSTALL_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_CMAKE_ARGS}")
 
 			# Ensure we don't spawn useless sub-processes all the time.
 			if(EXISTS "${_EC_TEMP_PATH}/install.sha3")
@@ -476,9 +560,9 @@ function(ExternalContent)
 			# Install
 			if(_EC_INSTALL_DIRTY)
 				execute_process(
-					COMMAND "cmake" --install "${_EC_BINARY_PATH}" ${_EC_INSTALL_ARGS}
+					COMMAND "cmake" ${_EC_CMAKE_ARGS}
 					WORKING_DIRECTORY "${_EC_BINARY_PATH}"
-#					COMMAND_ECHO STDOUT
+					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
