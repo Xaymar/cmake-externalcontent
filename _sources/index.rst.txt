@@ -1,0 +1,336 @@
+===============
+ExternalContent
+===============
+Download, Configure, Build and Install external content all without polluting the global cache! ExternalContent tries to ensure full separation of the build environments unlike FetchContent and ExternalProject. You won't ever have to worry about a subproject not being made to CMakes wishful specification - which aren't even well defined anyway.
+
+--------
+Synopsis
+--------
+
+.. parsed-literal::
+
+  ExternalContent(
+    `NAME`_ <name>
+    [`TEMP_PATH`_ <path>]
+    [`SOURCE_PATH`_ <path>]
+    [`BINARY_PATH`_ <path>]
+    [`INSTALL_PATH`_ <path>]
+
+    [`SKIP_DOWNLOAD`_
+	  |
+      [`DOWNLOAD_URL`_ <url>
+		[`DOWNLOAD_FILE`_ <filename.extension>]
+		[`DOWNLOAD_HASH`_ <type>:<hash>]
+	  ]
+	  |
+      [ `GIT_URL` <url>
+	    [`GIT_REF` <ref>]
+		[`GIT_CLONE_OPTIONS`_ <option> [<option> [...]]]
+		[`GIT_CHECKOUT_OPTIONS`_ <option> [<option> [...]]]
+	  ]
+    ]
+
+    [`SKIP_CONFIGURE`_ |
+      [ `CONFIGURE_FUNCTION`_ <function-name>] |
+      [ `CONFIGURE_ARGS`_ <option> [<option> [...]]]
+    ]
+
+    [`SKIP_BUILD`_ |
+      [ `BUILD_FUNCTION`_ <function-name>] |
+      [ `BUILD_ARGS`_ <option> [<option> [...]]]
+    ]
+
+    [`SKIP_INSTALL`_ |
+      [ `INSTALL_FUNCTION`_ <function-name>] |
+      [ `INSTALL_ARGS`_ <option> [<option> [...]]]
+    ]
+  )
+
+-----
+Usage
+-----
+
+General Options
+===============
+
+.. _NAME:
+
+NAME
+-----------
+
+.. code-block:: cmake
+
+	ExternalContent(... NAME "<name>" ...)
+
+The unique identifier for this external content which must be a valid directory name and also a valid target name. Will also be used to store some output variables.
+
+Paths
+=====
+
+.. _TEMP_PATH:
+
+TEMP_PATH
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... TEMP_PATH "<path>" ...)
+
+Optional. Specifies where we should store any temporary files for this external content. It's recommended to leave this be.
+
+.. _SOURCE_PATH:
+
+SOURCE_PATH:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... SOURCE_PATH "<path>" ...)
+
+Optional. Specifies where the source should be extracted to. Can be used with `SKIP_DOWNLOAD`_ to specify existing code as external content.
+
+.. _BINARY_PATH:
+
+BINARY_PATH:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... BINARY_PATH "<path>" ...)
+
+Optional. Specifies where the build files should be located.
+
+.. _INSTALL_PATH:
+
+INSTALL_PATH:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... INSTALL_PATH "<path>" ...)
+
+Optional. Specifies where the external content should be installed to.
+
+Downloads
+=========
+
+.. _SKIP_DOWNLOAD:
+
+SKIP_DOWNLOAD
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... SKIP_DOWNLOAD ...)
+
+Optional. When set skips downloading entirely. Allows using existing code as external content if used with `SOURCE_PATH`_.
+
+
+From File
+---------
+
+.. _DOWNLOAD_URL:
+
+DOWNLOAD_URL
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... DOWNLOAD_URL <url> ...)
+
+Optional.
+
+.. _DOWNLOAD_FILE:
+
+DOWNLOAD_FILE
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... DOWNLOAD_FILE <filename.extension> ...)
+
+Required if `DOWNLOAD_URL`_ does not contain a proper filename with a recognizable extension.
+
+.. _DOWNLOAD_HASH:
+
+DOWNLOAD_HASH
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... DOWNLOAD_HASH <type>;<hash> ...)
+
+Optional. Verifies the downloaded file against the given hash after downloading to ensure that nothing has gone wrong. The type can be any of the ones supported by `file(HASH ...) <https://cmake.org/cmake/help/latest/command/file.html#hash>`__
+
+From Git Repository
+-------------------
+
+.. _GIT_URL:
+
+GIT_URL
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... GIT_URL <url> ...)
+
+Optional. Downloads the source code from a given git repository url.
+
+.. _GIT_REF:
+
+GIT_REF
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... GIT_REF <ref> ...)
+
+Required if `GIT_URL`_ is provided. Must be either a branch, tag, or commit hash.
+
+.. _GIT_CLONE_OPTIONS:
+
+GIT_CLONE_OPTIONS
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... GIT_CLONE_OPTIONS <option> [<option> [...]] ...)
+
+Optional. One or more options that are passed through to git-clone.
+
+.. _GIT_CHECKOUT_OPTIONS:
+
+GIT_CHECKOUT_OPTIONS
+#############
+
+.. code-block:: cmake
+
+	ExternalContent(... GIT_CHECKOUT_OPTIONS <option> [<option> [...]] ...)
+
+Optional. One or more options that are passed through to git-checkout.
+
+Configuring
+===========
+
+.. _SKIP_CONFIGURE:
+
+SKIP_CONFIGURE:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... SKIP_CONFIGURE ...)
+
+Optional. Skips the entire configure section.
+
+.. _CONFIGURE_FUNCTION:
+
+CONFIGURE_FUNCTION:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... CONFIGURE_FUNCTION "<function-name>" ...)
+
+Optional. Specify a custom function to be used to configure this external content instead of the default handler. The function is expected to have the following signature:
+
+.. code-block:: cmake
+
+	function(my_custom_configure_function TEMP_PATH SOURCE_PATH BINARY_PATH INSTALL_PATH)
+		# Remember to FATAL_ERROR on all errors.
+	endfunction()
+
+.. _CONFIGURE_ARGS:
+
+CONFIGURE_ARGS:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... CONFIGURE_ARGS <option> [<option> [...]] ...)
+
+Optional. Arguments to pass to the default configure handler. Can be specified multiple times or have several options chained after another.
+
+Building
+========
+
+.. _SKIP_BUILD:
+
+SKIP_BUILD:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... SKIP_BUILD ...)
+
+Optional. Skips the entire build section.
+
+.. _BUILD_FUNCTION:
+
+BUILD_FUNCTION:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... BUILD_FUNCTION "<function-name>" ...)
+
+Optional. Specify a custom function to be used to build this external content instead of the default handler. The function is expected to have the following signature:
+
+.. code-block:: cmake
+
+	function(my_custom_build_function TEMP_PATH SOURCE_PATH BINARY_PATH INSTALL_PATH)
+		# Remember to FATAL_ERROR on all errors.
+	endfunction()
+
+.. _BUILD_ARGS:
+
+BUILD_ARGS:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... BUILD_ARGS <option> [<option> [...]] ...)
+
+Optional. Arguments to pass to the default build handler. Can be specified multiple times or have several options chained after another.
+
+Installing
+==========
+
+.. _SKIP_INSTALL:
+
+SKIP_INSTALL:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... SKIP_INSTALL ...)
+
+Optional. Skips the entire install section.
+
+.. _INSTALL_FUNCTION:
+
+INSTALL_FUNCTION:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... INSTALL_FUNCTION "<function-name>" ...)
+
+Optional. Specify a custom function to be used to install this external content instead of the default handler. The function is expected to have the following signature:
+
+.. code-block:: cmake
+
+	function(my_custom_install_function TEMP_PATH SOURCE_PATH BINARY_PATH INSTALL_PATH)
+		# Remember to FATAL_ERROR on all errors.
+	endfunction()
+
+.. _INSTALL_ARGS:
+
+INSTALL_ARGS:
+---------
+
+.. code-block:: cmake
+
+	ExternalContent(... INSTALL_ARGS <option> [<option> [...]] ...)
+
+Optional. Arguments to pass to the default install handler. Can be specified multiple times or have several options chained after another.

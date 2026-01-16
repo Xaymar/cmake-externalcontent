@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExternalContent &mdash; version 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            version
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">ExternalContent</a><ul>
+<li><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#general-options">General Options</a><ul>
+<li><a class="reference internal" href="#name">NAME</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#paths">Paths</a><ul>
+<li><a class="reference internal" href="#temp-path">TEMP_PATH</a></li>
+<li><a class="reference internal" href="#source-path">SOURCE_PATH:</a></li>
+<li><a class="reference internal" href="#binary-path">BINARY_PATH:</a></li>
+<li><a class="reference internal" href="#install-path">INSTALL_PATH:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#downloads">Downloads</a><ul>
+<li><a class="reference internal" href="#from-file">From File</a><ul>
+<li><a class="reference internal" href="#download-url">DOWNLOAD_URL</a></li>
+<li><a class="reference internal" href="#download-file">DOWNLOAD_FILE</a></li>
+<li><a class="reference internal" href="#download-hash">DOWNLOAD_HASH</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#from-git-repository">From Git Repository</a><ul>
+<li><a class="reference internal" href="#git-url">GIT_URL</a></li>
+<li><a class="reference internal" href="#git-ref">GIT_REF</a></li>
+<li><a class="reference internal" href="#git-clone-options">GIT_CLONE_OPTIONS</a></li>
+<li><a class="reference internal" href="#git-checkout-options">GIT_CHECKOUT_OPTIONS</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuring">Configuring</a><ul>
+<li><a class="reference internal" href="#skip-configure">SKIP_CONFIGURE:</a></li>
+<li><a class="reference internal" href="#configure-function">CONFIGURE_FUNCTION:</a></li>
+<li><a class="reference internal" href="#configure-args">CONFIGURE_ARGS:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#building">Building</a><ul>
+<li><a class="reference internal" href="#skip-build">SKIP_BUILD:</a></li>
+<li><a class="reference internal" href="#build-function">BUILD_FUNCTION:</a></li>
+<li><a class="reference internal" href="#build-args">BUILD_ARGS:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installing">Installing</a><ul>
+<li><a class="reference internal" href="#skip-install">SKIP_INSTALL:</a></li>
+<li><a class="reference internal" href="#install-function">INSTALL_FUNCTION:</a></li>
+<li><a class="reference internal" href="#install-args">INSTALL_ARGS:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">version</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ExternalContent</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="externalcontent">
+<h1>ExternalContent<a class="headerlink" href="#externalcontent" title="Link to this heading"></a></h1>
+<p>Download, Configure, Build and Install external content all without polluting the global cache! ExternalContent tries to ensure full separation of the build environments unlike FetchContent and ExternalProject. You won’t ever have to worry about a subproject not being made to CMakes wishful specification - which aren’t even well defined anyway.</p>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Link to this heading"></a></h2>
+<pre class="literal-block">ExternalContent(
+  <a class="reference internal" href="#name">NAME</a> &lt;name&gt;
+  [<a class="reference internal" href="#temp-path">TEMP_PATH</a> &lt;path&gt;]
+  [<a class="reference internal" href="#source-path">SOURCE_PATH</a> &lt;path&gt;]
+  [<a class="reference internal" href="#binary-path">BINARY_PATH</a> &lt;path&gt;]
+  [<a class="reference internal" href="#install-path">INSTALL_PATH</a> &lt;path&gt;]
+
+  [<a class="reference internal" href="#skip-download">SKIP_DOWNLOAD</a>
+        |
+    [<a class="reference internal" href="#download-url">DOWNLOAD_URL</a> &lt;url&gt;
+              [<a class="reference internal" href="#download-file">DOWNLOAD_FILE</a> &lt;filename.extension&gt;]
+              [<a class="reference internal" href="#download-hash">DOWNLOAD_HASH</a> &lt;type&gt;:&lt;hash&gt;]
+        ]
+        |
+    [ <cite>GIT_URL</cite> &lt;url&gt;
+          [<cite>GIT_REF</cite> &lt;ref&gt;]
+              [<a class="reference internal" href="#git-clone-options">GIT_CLONE_OPTIONS</a> &lt;option&gt; [&lt;option&gt; [...]]]
+              [<a class="reference internal" href="#git-checkout-options">GIT_CHECKOUT_OPTIONS</a> &lt;option&gt; [&lt;option&gt; [...]]]
+        ]
+  ]
+
+  [<a class="reference internal" href="#skip-configure">SKIP_CONFIGURE</a> |
+    [ <a class="reference internal" href="#configure-function">CONFIGURE_FUNCTION</a> &lt;function-name&gt;] |
+    [ <a class="reference internal" href="#configure-args">CONFIGURE_ARGS</a> &lt;option&gt; [&lt;option&gt; [...]]]
+  ]
+
+  [<a class="reference internal" href="#skip-build">SKIP_BUILD</a> |
+    [ <a class="reference internal" href="#build-function">BUILD_FUNCTION</a> &lt;function-name&gt;] |
+    [ <a class="reference internal" href="#build-args">BUILD_ARGS</a> &lt;option&gt; [&lt;option&gt; [...]]]
+  ]
+
+  [<a class="reference internal" href="#skip-install">SKIP_INSTALL</a> |
+    [ <a class="reference internal" href="#install-function">INSTALL_FUNCTION</a> &lt;function-name&gt;] |
+    [ <a class="reference internal" href="#install-args">INSTALL_ARGS</a> &lt;option&gt; [&lt;option&gt; [...]]]
+  ]
+)</pre>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="general-options">
+<h3>General Options<a class="headerlink" href="#general-options" title="Link to this heading"></a></h3>
+<section id="name">
+<span id="id1"></span><h4>NAME<a class="headerlink" href="#name" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">NAME</span><span class="w"> </span><span class="s2">&quot;&lt;name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The unique identifier for this external content which must be a valid directory name and also a valid target name. Will also be used to store some output variables.</p>
+</section>
+</section>
+<section id="paths">
+<h3>Paths<a class="headerlink" href="#paths" title="Link to this heading"></a></h3>
+<section id="temp-path">
+<span id="id2"></span><h4>TEMP_PATH<a class="headerlink" href="#temp-path" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">TEMP_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Specifies where we should store any temporary files for this external content. It’s recommended to leave this be.</p>
+</section>
+<section id="source-path">
+<span id="id3"></span><h4>SOURCE_PATH:<a class="headerlink" href="#source-path" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">SOURCE_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Specifies where the source should be extracted to. Can be used with <a class="reference internal" href="#skip-download">SKIP_DOWNLOAD</a> to specify existing code as external content.</p>
+</section>
+<section id="binary-path">
+<span id="id4"></span><h4>BINARY_PATH:<a class="headerlink" href="#binary-path" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">BINARY_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Specifies where the build files should be located.</p>
+</section>
+<section id="install-path">
+<span id="id5"></span><h4>INSTALL_PATH:<a class="headerlink" href="#install-path" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">INSTALL_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Specifies where the external content should be installed to.</p>
+</section>
+</section>
+<section id="downloads">
+<h3>Downloads<a class="headerlink" href="#downloads" title="Link to this heading"></a></h3>
+<div class="highlight-cmake notranslate" id="skip-download"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">SKIP_DOWNLOAD</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. When set skips downloading entirely. Allows using existing code as external content if used with <a class="reference internal" href="#source-path">SOURCE_PATH</a>.</p>
+<section id="from-file">
+<h4>From File<a class="headerlink" href="#from-file" title="Link to this heading"></a></h4>
+<section id="download-url">
+<span id="id6"></span><h5>DOWNLOAD_URL<a class="headerlink" href="#download-url" title="Link to this heading"></a></h5>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">DOWNLOAD_URL</span><span class="w"> </span><span class="s">&lt;url&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional.</p>
+</section>
+<section id="download-file">
+<span id="id7"></span><h5>DOWNLOAD_FILE<a class="headerlink" href="#download-file" title="Link to this heading"></a></h5>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">DOWNLOAD_FILE</span><span class="w"> </span><span class="s">&lt;filename.extension&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Required if <a class="reference internal" href="#download-url">DOWNLOAD_URL</a> does not contain a proper filename with a recognizable extension.</p>
+</section>
+<section id="download-hash">
+<span id="id8"></span><h5>DOWNLOAD_HASH<a class="headerlink" href="#download-hash" title="Link to this heading"></a></h5>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">DOWNLOAD_HASH</span><span class="w"> </span><span class="s">&lt;type&gt;;&lt;hash&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Verifies the downloaded file against the given hash after downloading to ensure that nothing has gone wrong. The type can be any of the ones supported by <a class="reference external" href="https://cmake.org/cmake/help/latest/command/file.html#hash">file(HASH …)</a></p>
+</section>
+</section>
+<section id="from-git-repository">
+<h4>From Git Repository<a class="headerlink" href="#from-git-repository" title="Link to this heading"></a></h4>
+<section id="git-url">
+<span id="id9"></span><h5>GIT_URL<a class="headerlink" href="#git-url" title="Link to this heading"></a></h5>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">GIT_URL</span><span class="w"> </span><span class="s">&lt;url&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Downloads the source code from a given git repository url.</p>
+</section>
+<section id="git-ref">
+<span id="id10"></span><h5>GIT_REF<a class="headerlink" href="#git-ref" title="Link to this heading"></a></h5>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">GIT_REF</span><span class="w"> </span><span class="s">&lt;ref&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Required if <a class="reference internal" href="#git-url">GIT_URL</a> is provided. Must be either a branch, tag, or commit hash.</p>
+</section>
+<section id="git-clone-options">
+<span id="id11"></span><h5>GIT_CLONE_OPTIONS<a class="headerlink" href="#git-clone-options" title="Link to this heading"></a></h5>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">GIT_CLONE_OPTIONS</span><span class="w"> </span><span class="s">&lt;option&gt;</span><span class="w"> </span><span class="s">[&lt;option&gt;</span><span class="w"> </span><span class="s">[...]]</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. One or more options that are passed through to git-clone.</p>
+</section>
+<section id="git-checkout-options">
+<span id="id12"></span><h5>GIT_CHECKOUT_OPTIONS<a class="headerlink" href="#git-checkout-options" title="Link to this heading"></a></h5>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">GIT_CHECKOUT_OPTIONS</span><span class="w"> </span><span class="s">&lt;option&gt;</span><span class="w"> </span><span class="s">[&lt;option&gt;</span><span class="w"> </span><span class="s">[...]]</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. One or more options that are passed through to git-checkout.</p>
+</section>
+</section>
+</section>
+<section id="configuring">
+<h3>Configuring<a class="headerlink" href="#configuring" title="Link to this heading"></a></h3>
+<section id="skip-configure">
+<span id="id13"></span><h4>SKIP_CONFIGURE:<a class="headerlink" href="#skip-configure" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">SKIP_CONFIGURE</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Skips the entire configure section.</p>
+</section>
+<section id="configure-function">
+<span id="id14"></span><h4>CONFIGURE_FUNCTION:<a class="headerlink" href="#configure-function" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">CONFIGURE_FUNCTION</span><span class="w"> </span><span class="s2">&quot;&lt;function-name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Specify a custom function to be used to configure this external content instead of the default handler. The function is expected to have the following signature:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">function</span><span class="p">(</span><span class="s">my_custom_configure_function</span><span class="w"> </span><span class="s">TEMP_PATH</span><span class="w"> </span><span class="s">SOURCE_PATH</span><span class="w"> </span><span class="s">BINARY_PATH</span><span class="w"> </span><span class="s">INSTALL_PATH</span><span class="p">)</span>
+<span class="w">        </span><span class="c"># Remember to FATAL_ERROR on all errors.</span>
+<span class="nb">endfunction</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-args">
+<span id="id15"></span><h4>CONFIGURE_ARGS:<a class="headerlink" href="#configure-args" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">CONFIGURE_ARGS</span><span class="w"> </span><span class="s">&lt;option&gt;</span><span class="w"> </span><span class="s">[&lt;option&gt;</span><span class="w"> </span><span class="s">[...]]</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Arguments to pass to the default configure handler. Can be specified multiple times or have several options chained after another.</p>
+</section>
+</section>
+<section id="building">
+<h3>Building<a class="headerlink" href="#building" title="Link to this heading"></a></h3>
+<section id="skip-build">
+<span id="id16"></span><h4>SKIP_BUILD:<a class="headerlink" href="#skip-build" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">SKIP_BUILD</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Skips the entire build section.</p>
+</section>
+<section id="build-function">
+<span id="id17"></span><h4>BUILD_FUNCTION:<a class="headerlink" href="#build-function" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">BUILD_FUNCTION</span><span class="w"> </span><span class="s2">&quot;&lt;function-name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Specify a custom function to be used to build this external content instead of the default handler. The function is expected to have the following signature:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">function</span><span class="p">(</span><span class="s">my_custom_build_function</span><span class="w"> </span><span class="s">TEMP_PATH</span><span class="w"> </span><span class="s">SOURCE_PATH</span><span class="w"> </span><span class="s">BINARY_PATH</span><span class="w"> </span><span class="s">INSTALL_PATH</span><span class="p">)</span>
+<span class="w">        </span><span class="c"># Remember to FATAL_ERROR on all errors.</span>
+<span class="nb">endfunction</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="build-args">
+<span id="id18"></span><h4>BUILD_ARGS:<a class="headerlink" href="#build-args" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">BUILD_ARGS</span><span class="w"> </span><span class="s">&lt;option&gt;</span><span class="w"> </span><span class="s">[&lt;option&gt;</span><span class="w"> </span><span class="s">[...]]</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Arguments to pass to the default build handler. Can be specified multiple times or have several options chained after another.</p>
+</section>
+</section>
+<section id="installing">
+<h3>Installing<a class="headerlink" href="#installing" title="Link to this heading"></a></h3>
+<section id="skip-install">
+<span id="id19"></span><h4>SKIP_INSTALL:<a class="headerlink" href="#skip-install" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">SKIP_INSTALL</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Skips the entire install section.</p>
+</section>
+<section id="install-function">
+<span id="id20"></span><h4>INSTALL_FUNCTION:<a class="headerlink" href="#install-function" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">INSTALL_FUNCTION</span><span class="w"> </span><span class="s2">&quot;&lt;function-name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Specify a custom function to be used to install this external content instead of the default handler. The function is expected to have the following signature:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">function</span><span class="p">(</span><span class="s">my_custom_install_function</span><span class="w"> </span><span class="s">TEMP_PATH</span><span class="w"> </span><span class="s">SOURCE_PATH</span><span class="w"> </span><span class="s">BINARY_PATH</span><span class="w"> </span><span class="s">INSTALL_PATH</span><span class="p">)</span>
+<span class="w">        </span><span class="c"># Remember to FATAL_ERROR on all errors.</span>
+<span class="nb">endfunction</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="install-args">
+<span id="id21"></span><h4>INSTALL_ARGS:<a class="headerlink" href="#install-args" title="Link to this heading"></a></h4>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">INSTALL_ARGS</span><span class="w"> </span><span class="s">&lt;option&gt;</span><span class="w"> </span><span class="s">[&lt;option&gt;</span><span class="w"> </span><span class="s">[...]]</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optional. Arguments to pass to the default install handler. Can be specified multiple times or have several options chained after another.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Narta Xaymar Dirks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
