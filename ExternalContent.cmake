@@ -391,6 +391,7 @@ function(ExternalContent)
 				clone
 				${EXTERNALCONTENT_GIT_CLONE_OPTIONS}
 				-v
+				-b ${EXTERNALCONTENT_GIT_REF}
 				"${EXTERNALCONTENT_GIT_URL}"
 				"${EXTERNALCONTENT_SOURCE_PATH}"
 			)
