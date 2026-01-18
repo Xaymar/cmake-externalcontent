@@ -52,7 +52,7 @@ macro(ExternalContent_ParsePath OUTPUT_VAR INPUT_VAR)
 endmacro()
 
 function(ExternalContent)
-	set(EXTERNALCONTENT_PREFIX "${CMAKE_BINARY_DIR}/CMakeFiles/ExternalContent/")
+	set(EXTERNALCONTENT_PREFIX "${CMAKE_BINARY_DIR}/ExternalContentFiles/")
 
 	if(TRUE) # Resolve dependencies
 		# Dependency: Git
