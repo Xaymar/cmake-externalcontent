@@ -52,38 +52,47 @@ macro(ExternalContent_ParsePath OUTPUT_VAR INPUT_VAR)
 endmacro()
 
 function(ExternalContent)
+	set(EXTERNALCONTENT_PREFIX "${CMAKE_BINARY_DIR}/CMakeFiles/ExternalContent/")
+
 	if(TRUE) # Resolve dependencies
 		# Dependency: Git
 		find_package(Git QUIET)
 	endif()
 
-	if(TRUE) # Generate a UUID once for each fresh build to ensure that there's no collisions.
-		if(NOT EXTERNALCONTENT_UUID)
-			string(TIMESTAMP _EC_UUID_TS "%Y-%m-%dT%H:%M:%S" UTC)
-			string(RANDOM LENGTH 64 _EC_UUID_RANDOM)
-			string(UUID EXTERNALCONTENT_UUID
-				NAMESPACE "00000000-0000-0000-0000-000000000000"
-				NAME "${TIMESTAMP}-${RANDOM}"
-				TYPE SHA1
-				UPPER
-			)
-			set(CACHE{EXTERNALCONTENT_UUID}
-				TYPE INTERNAL
-				HELP "UUID for external content storage to prevent collisions."
-				VALUE "${EXTERNALCONTENT_UUID}"
-			)
-		endif()
-	endif()
-
 	if(TRUE) # Parse and validate the arguments
-		set(_EC_PREFIX "${CMAKE_BINARY_DIR}/ExternalContent.dir")
-		set(_EC_TEMP_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.tmp")
-		set(_EC_CONFIGURE_SUFFIX "")
-		set(_EC_SOURCE_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.src")
-		set(_EC_BINARY_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.bin")
-		set(_EC_INSTALL_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.dist")
+		# Ensure any missing value is at it's default value
+		set(EXTERNALCONTENT_NAME "")
+		set(EXTERNALCONTENT_TEMP_PATH "")
+		set(EXTERNALCONTENT_SOURCE_PATH "")
+		set(EXTERNALCONTENT_BINARY_PATH "")
+		set(EXTERNALCONTENT_INSTALL_PATH "")
+		set(EXTERNALCONTENT_BUILDSYSTEM_SUFFIX "")
+		set(EXTERNALCONTENT_SKIP_DOWNLOAD OFF)
+		set(EXTERNALCONTENT_DIRTY OFF)
+		set(EXTERNALCONTENT_DOWNLOAD_URL "")
+		set(EXTERNALCONTENT_DOWNLOAD_FILE "")
+		set(EXTERNALCONTENT_DOWNLOAD_HASH "")
+		set(EXTERNALCONTENT_GIT_URL OFF)
+		set(EXTERNALCONTENT_GIT_REF OFF)
+		set(EXTERNALCONTENT_GIT_CLONE_ARGS "")
+		set(EXTERNALCONTENT_GIT_CHECKOUT_ARGS "")
+		set(EXTERNALCONTENT_SKIP_PATCH OFF)
+		set(EXTERNALCONTENT_PATCH_FUNCTION OFF)
+		set(EXTERNALCONTENT_DIRTY OFF)
+		set(EXTERNALCONTENT_SKIP_CONFIGURE OFF)
+		set(EXTERNALCONTENT_CONFIGURE_FUNCTION OFF)
+		set(EXTERNALCONTENT_CONFIGURE_ARGS "")
+		set(EXTERNALCONTENT_DIRTY OFF)
+		set(EXTERNALCONTENT_SKIP_BUILD OFF)
+		set(EXTERNALCONTENT_BUILD_FUNCTION OFF)
+		set(EXTERNALCONTENT_BUILD_ARGS "")
+		set(EXTERNALCONTENT_DIRTY OFF)
+		set(EXTERNALCONTENT_SKIP_INSTALL OFF)
+		set(EXTERNALCONTENT_INSTALL_FUNCTION OFF)
+		set(EXTERNALCONTENT_INSTALL_ARGS "")
+		set(EXTERNALCONTENT_DIRTY OFF)
 
-		set(__EC_FLAGS
+		set(_EXTERNALCONTENT_FLAGS
 			## Skip the download step entirely.
 			"SKIP_DOWNLOAD"
 
@@ -99,7 +108,7 @@ function(ExternalContent)
 			## Skip the install step entirely.
 			"SKIP_INSTALL"
 		)
-		set(__EC_PARAMS_SINGLE
+		set(_EXTERNALCONTENT_PARAMS_SINGLE
 			## What is this external content called?
 			# Should be a unique name that also is a valid filesystem directory name.
 			"NAME"
@@ -152,7 +161,7 @@ function(ExternalContent)
 			# Some projects store their key configuration files outside of the parent tree.
 			#
 			# Optional.
-			"CONFIGURE_SUFFIX"
+			"BUILDSYSTEM_SUFFIX"
 
 			## Provide a custom function for the configure step.
 			# This function is expected to message(FATAL_ERROR) if an error occurs.
@@ -198,7 +207,7 @@ function(ExternalContent)
 			# Optional.
 			"INSTALL_FUNCTION"
 		)
-		set(__EC_PARAMS_MULTI
+		set(_EXTERNALCONTENT_PARAMS_MULTI
 			## (git) Additional options provided to the clone command line.
 			# Optional. :)
 			"GIT_CLONE_OPTIONS"
@@ -227,434 +236,470 @@ function(ExternalContent)
 		)
 
 		cmake_parse_arguments(PARSE_ARGV 0
-			"_EC"
-			"${__EC_FLAGS}"
-			"${__EC_PARAMS_SINGLE}"
-			"${__EC_PARAMS_MULTI}"
+			"EXTERNALCONTENT"
+			"${_EXTERNALCONTENT_FLAGS}"
+			"${_EXTERNALCONTENT_PARAMS_SINGLE}"
+			"${_EXTERNALCONTENT_PARAMS_MULTI}"
 		)
 
 		# Validate the NAME parameter
-		string(LENGTH "${_EC_NAME}" _EC_NAME_LENGTH)
-		if((NOT _EC_NAME) OR (_EC_NAME_LENGTH EQUAL 0))
-			message(STATUS "${_EC_NAME} ${_EC_NAME_LENGTH}")
-			message(FATAL_ERROR "[EC: ${_EC_NAME}] You must provide a NAME for the external content.")
+		string(LENGTH "${EXTERNALCONTENT_NAME}" EXTERNALCONTENT_NAME_LENGTH)
+		if((NOT EXTERNALCONTENT_NAME) OR (EXTERNALCONTENT_NAME_LENGTH EQUAL 0))
+			message(STATUS "${EXTERNALCONTENT_NAME} ${EXTERNALCONTENT_NAME_LENGTH}")
+			message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] You must provide a NAME for the external content.")
 		endif()
 
 		# Ensure that we have some kind of source for the content.
-		string(LENGTH _EC_SOURCE_PATH _EC_SOURCE_PATH_LENGTH)
-		string(LENGTH _EC_DOWNLOAD_URL _EC_DOWNLOAD_URL_LENGTH)
-		string(LENGTH _EC_GIT_URL _EC_GIT_URL_LENGTH)
+		string(LENGTH EXTERNALCONTENT_SOURCE_PATH EXTERNALCONTENT_SOURCE_PATH_LENGTH)
+		string(LENGTH EXTERNALCONTENT_DOWNLOAD_URL EXTERNALCONTENT_DOWNLOAD_URL_LENGTH)
+		string(LENGTH EXTERNALCONTENT_GIT_URL EXTERNALCONTENT_GIT_URL_LENGTH)
 		if(
-			((NOT _EC_SOURCE_PATH) OR (_EC_SOURCE_PATH_LENGTH EQUAL 0))
-		AND ((NOT _EC_DOWNLOAD_URL) OR (_EC_DOWNLOAD_URL_LENGTH EQUAL 0))
-		AND ((NOT _EC_GIT_URL) OR (_EC_GIT_URL_LENGTH EQUAL 0)))
-			message(FATAL_ERROR "[EC: ${_EC_NAME}] You must provide a source for the external content.")
+			(
+				SKIP_DOWNLOAD AND (
+					(NOT EXTERNALCONTENT_SOURCE_PATH)
+					OR (EXTERNALCONTENT_SOURCE_PATH_LENGTH EQUAL 0)
+				)
+			) OR (
+				(
+					(NOT EXTERNALCONTENT_DOWNLOAD_URL)
+				OR (EXTERNALCONTENT_DOWNLOAD_URL_LENGTH EQUAL 0)
+				) AND (
+					(NOT EXTERNALCONTENT_GIT_URL)
+				OR (EXTERNALCONTENT_GIT_URL_LENGTH EQUAL 0)
+				)
+			)
+		)
+			message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] You must provide a source for the external content.")
 		endif()
 
 		# Ensure that there's always a path for things.
-		string(LENGTH "${_EC_TEMP_PATH}" _EC_TEMP_PATH_LENGTH)
-		if((NOT _EC_TEMP_PATH) OR (_EC_TEMP_PATH_LENGTH EQUAL 0))
-			set(_EC_TEMP_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.tmp")
+		string(LENGTH "${EXTERNALCONTENT_TEMP_PATH}" EXTERNALCONTENT_TEMP_PATH_LENGTH)
+		if((NOT EXTERNALCONTENT_TEMP_PATH) OR (EXTERNALCONTENT_TEMP_PATH_LENGTH EQUAL 0))
+			set(EXTERNALCONTENT_TEMP_PATH "${EXTERNALCONTENT_PREFIX}/${EXTERNALCONTENT_NAME}.tmp")
 		endif()
-		string(LENGTH "${_EC_SOURCE_PATH}" _EC_SOURCE_PATH_LENGTH)
-		if((NOT _EC_SOURCE_PATH) OR (_EC_SOURCE_PATH_LENGTH EQUAL 0))
-			set(_EC_SOURCE_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.src")
+		string(LENGTH "${EXTERNALCONTENT_SOURCE_PATH}" EXTERNALCONTENT_SOURCE_PATH_LENGTH)
+		if((NOT EXTERNALCONTENT_SOURCE_PATH) OR (EXTERNALCONTENT_SOURCE_PATH_LENGTH EQUAL 0))
+			set(EXTERNALCONTENT_SOURCE_PATH "${EXTERNALCONTENT_PREFIX}/${EXTERNALCONTENT_NAME}.src")
 		endif()
-		string(LENGTH "${_EC_BINARY_PATH}" _EC_BINARY_PATH_LENGTH)
-		if((NOT _EC_BINARY_PATH) OR (_EC_BINARY_PATH_LENGTH EQUAL 0))
-			set(_EC_BINARY_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.bin")
+		string(LENGTH "${EXTERNALCONTENT_BINARY_PATH}" EXTERNALCONTENT_BINARY_PATH_LENGTH)
+		if((NOT EXTERNALCONTENT_BINARY_PATH) OR (EXTERNALCONTENT_BINARY_PATH_LENGTH EQUAL 0))
+			set(EXTERNALCONTENT_BINARY_PATH "${EXTERNALCONTENT_PREFIX}/${EXTERNALCONTENT_NAME}.bin")
 		endif()
-		string(LENGTH "${_EC_INSTALL_PATH}" _EC_INSTALL_PATH_LENGTH)
-		if((NOT _EC_INSTALL_PATH) OR (_EC_INSTALL_PATH_LENGTH EQUAL 0))
-			set(_EC_INSTALL_PATH "${_EC_PREFIX}/${EXTERNALCONTENT_UUID}/${_EC_NAME}.dst")
+		string(LENGTH "${EXTERNALCONTENT_INSTALL_PATH}" EXTERNALCONTENT_INSTALL_PATH_LENGTH)
+		if((NOT EXTERNALCONTENT_INSTALL_PATH) OR (EXTERNALCONTENT_INSTALL_PATH_LENGTH EQUAL 0))
+			set(EXTERNALCONTENT_INSTALL_PATH "${EXTERNALCONTENT_PREFIX}/${EXTERNALCONTENT_NAME}.dst")
 		endif()
 
 		# Validate the download URL
-		if(_EC_DOWNLOAD_URL)
-			ExternalContent_ParseURL(_EC_DOWNLOAD_URL "${_EC_DOWNLOAD_URL}")
-			ExternalContent_ParsePath(_EC_DOWNLOAD "_EC_DOWNLOAD_URL_PATH")
-			if(_EC_DOWNLOAD_FILE)
-				ExternalContent_ParsePath(_EC_DOWNLOAD "_EC_DOWNLOAD_FILE")
+		if(EXTERNALCONTENT_DOWNLOAD_URL)
+			ExternalContent_ParseURL(EXTERNALCONTENT_DOWNLOAD_URL "${EXTERNALCONTENT_DOWNLOAD_URL}")
+			ExternalContent_ParsePath(EXTERNALCONTENT_DOWNLOAD "EXTERNALCONTENT_DOWNLOAD_URL_PATH")
+			if(EXTERNALCONTENT_DOWNLOAD_FILE)
+				ExternalContent_ParsePath(EXTERNALCONTENT_DOWNLOAD "EXTERNALCONTENT_DOWNLOAD_FILE")
 			else()
-				ExternalContent_ParsePath(_EC_DOWNLOAD "_EC_DOWNLOAD_URL_PATH")
+				ExternalContent_ParsePath(EXTERNALCONTENT_DOWNLOAD "EXTERNALCONTENT_DOWNLOAD_URL_PATH")
 			endif()
 
 			# Set the object that is being used.
-			set(_EC_DOWNLOAD_OBJECT "${_EC_TEMP_PATH}/${_EC_DOWNLOAD_FILENAME}")
+			set(EXTERNALCONTENT_DOWNLOAD_OBJECT "${EXTERNALCONTENT_TEMP_PATH}/${EXTERNALCONTENT_DOWNLOAD_FILENAME}")
 		endif()
 
 		# Validate the download hash.
-		list(LENGTH _EC_DOWNLOAD_HASH _EC_DOWNLOAD_HASH_LENGTH)
-		if(_EC_DOWNLOAD_HASH AND (_EC_DOWNLOAD_HASH_LENGTH GREATER 0))
-			list(GET _EC_DOWNLOAD_HASH 0 _EC_DOWNLOAD_HASH_TYPE)
-			list(GET _EC_DOWNLOAD_HASH 1 _EC_DOWNLOAD_HASH_HASH)
-			string(TOLOWER "${_EC_DOWNLOAD_HASH_HASH}" _EC_DOWNLOAD_HASH_HASH)
-		elseif(_EC_DOWNLOAD_HASH)
-			message(WARNING "[EC: ${_EC_NAME}] DOWNLOAD_HASH set to invalid value '${_EC_DOWNLOAD_HASH}', ignoring.")
-			unset(_EC_DOWNLOAD_HASH)
+		list(LENGTH EXTERNALCONTENT_DOWNLOAD_HASH EXTERNALCONTENT_DOWNLOAD_HASH_LENGTH)
+		if(EXTERNALCONTENT_DOWNLOAD_HASH AND (EXTERNALCONTENT_DOWNLOAD_HASH_LENGTH GREATER 0))
+			list(GET EXTERNALCONTENT_DOWNLOAD_HASH 0 EXTERNALCONTENT_DOWNLOAD_HASH_TYPE)
+			list(GET EXTERNALCONTENT_DOWNLOAD_HASH 1 EXTERNALCONTENT_DOWNLOAD_HASH_HASH)
+			string(TOLOWER "${EXTERNALCONTENT_DOWNLOAD_HASH_HASH}" EXTERNALCONTENT_DOWNLOAD_HASH_HASH)
+		elseif(EXTERNALCONTENT_DOWNLOAD_HASH)
+			message(WARNING "[EC: ${EXTERNALCONTENT_NAME}] DOWNLOAD_HASH set to invalid value '${EXTERNALCONTENT_DOWNLOAD_HASH}', ignoring.")
+			unset(EXTERNALCONTENT_DOWNLOAD_HASH)
 		endif()
 
 		# Validate the git URL
-		if(_EC_GIT_URL)
-			ExternalContent_ParseURL(_EC_GIT_URL "${_EC_GIT_URL}")
+		if(EXTERNALCONTENT_GIT_URL)
+			ExternalContent_ParseURL(EXTERNALCONTENT_GIT_URL "${EXTERNALCONTENT_GIT_URL}")
 
-			string(LENGTH _EC_GIT_REF _EC_GIT_REF_LENGTH)
-			if(((NOT _EC_GIT_REF) OR (_EC_GIT_REF_LENGTH EQUAL 0)))
-				message(FATAL_ERROR "[EC: ${_EC_NAME}] GIT_REF must be set when using git for sanity reasons.")
+			string(LENGTH EXTERNALCONTENT_GIT_REF EXTERNALCONTENT_GIT_REF_LENGTH)
+			if(((NOT EXTERNALCONTENT_GIT_REF) OR (EXTERNALCONTENT_GIT_REF_LENGTH EQUAL 0)))
+				message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] GIT_REF must be set when using git for sanity reasons.")
 			endif()
 		endif()
 	endif()
 
+	set(${EXTERNALCONTENT_NAME}_TEMP_PATH "${EXTERNALCONTENT_TEMP_PATH}" PARENT_SCOPE)
+	set(${EXTERNALCONTENT_NAME}_SOURCE_PATH "${EXTERNALCONTENT_SOURCE_PATH}" PARENT_SCOPE)
+	set(${EXTERNALCONTENT_NAME}_BINARY_PATH "${EXTERNALCONTENT_BINARY_PATH}" PARENT_SCOPE)
+	set(${EXTERNALCONTENT_NAME}_INSTALL_PATH "${EXTERNALCONTENT_INSTALL_PATH}" PARENT_SCOPE)
+
 	# Download and extract the content.
-	set(_EC_DOWNLOAD_DIRTY OFF)
-	if(NOT _EC_SKIP_DOWNLOAD)
-		if(_EC_DOWNLOAD_URL) # download: Download the file and optionally verify the hash.
+	set(EXTERNALCONTENT_DIRTY OFF)
+	if(NOT EXTERNALCONTENT_SKIP_DOWNLOAD)
+		if(EXTERNALCONTENT_DOWNLOAD_URL) # download: Download the file and optionally verify the hash.
+			set(EXTERNALCONTENT_FORCE_DOWNLOAD OFF)
+
 			# Check if the file actually differs (or is missing)
-			if(EXISTS ${_EC_DOWNLOAD_OBJECT})
-				if(_EC_DOWNLOAD_HASH)
-					file(${_EC_DOWNLOAD_HASH_TYPE} ${_EC_DOWNLOAD_OBJECT} _EC_DOWNLOAD_OBJECT_HASH)
-					if(NOT (_EC_DOWNLOAD_OBJECT_HASH STREQUAL _EC_DOWNLOAD_HASH_HASH)) # File hash differs.
-						set(_EC_DOWNLOAD_DIRTY ON)
+			if(EXISTS "${EXTERNALCONTENT_DOWNLOAD_OBJECT}")
+				if(EXTERNALCONTENT_DOWNLOAD_HASH)
+					file(${EXTERNALCONTENT_DOWNLOAD_HASH_TYPE} ${EXTERNALCONTENT_DOWNLOAD_OBJECT} EXTERNALCONTENT_DOWNLOAD_OBJECT_HASH)
+					if(NOT (EXTERNALCONTENT_DOWNLOAD_OBJECT_HASH STREQUAL EXTERNALCONTENT_DOWNLOAD_HASH_HASH)) # File hash differs.
+						set(EXTERNALCONTENT_FORCE_DOWNLOAD ON)
+						set(EXTERNALCONTENT_DIRTY ON)
 					endif()
 				endif()
 			else() # File is missing entirely.
-				set(_EC_DOWNLOAD_DIRTY ON)
+				set(EXTERNALCONTENT_DIRTY ON)
 			endif()
 
 			# Also consider things dirty if the source directory is missing.
-			if(NOT EXISTS ${_EC_SOURCE_PATH})
-				set(_EC_DOWNLOAD_DIRTY ON)
+			if(NOT EXISTS ${EXTERNALCONTENT_SOURCE_PATH})
+				set(EXTERNALCONTENT_DIRTY ON)
 			endif()
 
-			if(_EC_DOWNLOAD_DIRTY)
-				message(STATUS "[EC: ${_EC_NAME}] Downloading '${_EC_DOWNLOAD_FILE}' from '${_EC_DOWNLOAD_URL}'...")
+			if(EXTERNALCONTENT_DIRTY)
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Downloading '${EXTERNALCONTENT_DOWNLOAD_FILE}' from '${EXTERNALCONTENT_DOWNLOAD_URL}'...")
 
-				# Download the new file.
-				file(DOWNLOAD "${_EC_DOWNLOAD_URL}" "${_EC_DOWNLOAD_OBJECT}" SHOW_PROGRESS)
+				if((NOT EXISTS "${EXTERNALCONTENT_DOWNLOAD_OBJECT}") OR EXTERNALCONTENT_FORCE_DOWNLOAD)
+					# Download the new file.
+					file(DOWNLOAD "${EXTERNALCONTENT_DOWNLOAD_URL}" "${EXTERNALCONTENT_DOWNLOAD_OBJECT}" SHOW_PROGRESS)
 
-				# Verify the hash matches.
-				if(_EC_DOWNLOAD_HASH)
-					file(${_EC_DOWNLOAD_HASH_TYPE} ${_EC_DOWNLOAD_OBJECT} _EC_DOWNLOAD_OBJECT_HASH)
-					if(NOT (_EC_DOWNLOAD_OBJECT_HASH STREQUAL _EC_DOWNLOAD_HASH_HASH)) # File hash differs.
-						file(REMOVE "${_EC_DOWNLOAD_OBJECT}")
-						message(FATAL_ERROR "[EC: ${_EC_NAME}] Downloaded file has hash '${_EC_DOWNLOAD_OBJECT_HASH}' but expected hash '${_EC_DOWNLOAD_HASH_HASH}'. Aborting.")
+					# Verify the hash matches.
+					if(EXTERNALCONTENT_DOWNLOAD_HASH)
+						file(${EXTERNALCONTENT_DOWNLOAD_HASH_TYPE} ${EXTERNALCONTENT_DOWNLOAD_OBJECT} EXTERNALCONTENT_DOWNLOAD_OBJECT_HASH)
+						if(NOT (EXTERNALCONTENT_DOWNLOAD_OBJECT_HASH STREQUAL EXTERNALCONTENT_DOWNLOAD_HASH_HASH)) # File hash differs.
+							file(REMOVE "${EXTERNALCONTENT_DOWNLOAD_OBJECT}")
+							message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] Downloaded file has hash '${EXTERNALCONTENT_DOWNLOAD_OBJECT_HASH}' but expected hash '${EXTERNALCONTENT_DOWNLOAD_HASH_HASH}'. Aborting.")
+						endif()
 					endif()
 				endif()
 
 				# Remove the previously extracted content.
-				if(EXISTS ${_EC_SOURCE_PATH})
-					file(REMOVE_RECURSE "${_EC_SOURCE_PATH}")
+				if(EXISTS ${EXTERNALCONTENT_SOURCE_PATH})
+					file(REMOVE_RECURSE "${EXTERNALCONTENT_SOURCE_PATH}")
 				endif()
 
 				# Extract the whole thing.
 				file(ARCHIVE_EXTRACT
-					INPUT "${_EC_DOWNLOAD_OBJECT}"
-					DESTINATION "${_EC_SOURCE_PATH}"
+					INPUT "${EXTERNALCONTENT_DOWNLOAD_OBJECT}"
+					DESTINATION "${EXTERNALCONTENT_SOURCE_PATH}"
 					VERBOSE
 				)
 			else()
-				message(STATUS "[EC: ${_EC_NAME}] Skipping download as nothing has changed.")
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping download as nothing has changed.")
 			endif()
-		elseif(_EC_GIT_URL) # git: Clone or Checkout to the specific repository.
-			set(_EC_GIT_CLONE_ARGS
+		elseif(EXTERNALCONTENT_GIT_URL) # git: Clone or Checkout to the specific repository.
+			set(EXTERNALCONTENT_GIT_CLONE_ARGS
 				clone
-				${_EC_GIT_CLONE_OPTIONS}
+				${EXTERNALCONTENT_GIT_CLONE_OPTIONS}
 				-v
-				"${_EC_GIT_URL}"
-				"${_EC_SOURCE_PATH}"
+				"${EXTERNALCONTENT_GIT_URL}"
+				"${EXTERNALCONTENT_SOURCE_PATH}"
 			)
-			set(_EC_GIT_CHECKOUT_ARGS
+			set(EXTERNALCONTENT_GIT_CHECKOUT_ARGS
 				checkout
-				${_EC_GIT_CHECKOUT_OPTIONS}
+				${EXTERNALCONTENT_GIT_CHECKOUT_OPTIONS}
 				-f
-				${_EC_GIT_REF}
+				${EXTERNALCONTENT_GIT_REF}
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_GIT_CLONE_ARGS_HASH "${_EC_SOURCE_PATH} ${_EC_GIT_CLONE_ARGS}")
-			string(SHA3_512 _EC_GIT_CHECKOUT_ARGS_HASH "${_EC_SOURCE_PATH} ${_EC_GIT_CHECKOUT_ARGS}")
+			string(SHA3_512 EXTERNALCONTENT_GIT_CLONE_ARGS_HASH "${EXTERNALCONTENT_SOURCE_PATH} ${EXTERNALCONTENT_GIT_CLONE_ARGS}")
+			string(SHA3_512 EXTERNALCONTENT_GIT_CHECKOUT_ARGS_HASH "${EXTERNALCONTENT_SOURCE_PATH} ${EXTERNALCONTENT_GIT_CHECKOUT_ARGS}")
 
 			# Ensure that the commands still match up.
-			if(EXISTS "${_EC_TEMP_PATH}/git-clone.sha3")
-				file(READ "${_EC_TEMP_PATH}/git-clone.sha3" _EC_HASH_CMP)
-				if(NOT (_EC_HASH_CMP STREQUAL _EC_GIT_CLONE_ARGS_HASH))
-					message(STATUS "[EC: ${_EC_NAME}] Clone command changed, cloning again...")
-					set(_EC_DOWNLOAD_CLONE_DIRTY ON)
-					set(_EC_DOWNLOAD_DIRTY ON)
+			if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/git-clone.sha3")
+				file(READ "${EXTERNALCONTENT_TEMP_PATH}/git-clone.sha3" EXTERNALCONTENT_HASH_CMP)
+				if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_GIT_CLONE_ARGS_HASH))
+					message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Clone command changed, cloning again...")
+					set(EXTERNALCONTENT_FORCE_CLONE ON)
+					set(EXTERNALCONTENT_DIRTY ON)
 				endif()
 			else()
-				set(_EC_DOWNLOAD_CLONE_DIRTY ON)
-				set(_EC_DOWNLOAD_DIRTY ON)
+				set(EXTERNALCONTENT_FORCE_CLONE ON)
+				set(EXTERNALCONTENT_DIRTY ON)
 			endif()
-			if(EXISTS "${_EC_TEMP_PATH}/git-checkout.sha3")
-				file(READ "${_EC_TEMP_PATH}/git-checkout.sha3" _EC_HASH_CMP)
-				if(NOT (_EC_HASH_CMP STREQUAL _EC_GIT_CHECKOUT_ARGS_HASH))
-					set(_EC_DOWNLOAD_DIRTY ON)
+			if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/git-checkout.sha3")
+				file(READ "${EXTERNALCONTENT_TEMP_PATH}/git-checkout.sha3" EXTERNALCONTENT_HASH_CMP)
+				if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_GIT_CHECKOUT_ARGS_HASH))
+					set(EXTERNALCONTENT_DIRTY ON)
 				endif()
 			else()
-				set(_EC_DOWNLOAD_DIRTY ON)
+				set(EXTERNALCONTENT_DIRTY ON)
 			endif()
 
 			# Delete the directory if the clone args are dirty or if the directory isn't a git repository
-			if((EXISTS "${_EC_SOURCE_PATH}") AND (_EC_DOWNLOAD_CLONE_DIRTY OR (NOT EXISTS "${_EC_SOURCE_PATH}/.git")))
-				file(REMOVE_RECURSE "${_EC_SOURCE_PATH}")
-				set(_EC_DOWNLOAD_DIRTY ON)
+			if((EXISTS "${EXTERNALCONTENT_SOURCE_PATH}") AND (EXTERNALCONTENT_FORCE_CLONE OR (NOT EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/.git")))
+				file(REMOVE_RECURSE "${EXTERNALCONTENT_SOURCE_PATH}")
+				set(EXTERNALCONTENT_DIRTY ON)
 			endif()
-			if(NOT EXISTS "${_EC_SOURCE_PATH}")
+			if(NOT EXISTS "${EXTERNALCONTENT_SOURCE_PATH}")
 				# If the directory doesn't exist, we'll treat it as dirty and create it.
-				set(_EC_DOWNLOAD_DIRTY ON)
-				file(MAKE_DIRECTORY "${_EC_SOURCE_PATH}")
+				set(EXTERNALCONTENT_DIRTY ON)
+				file(MAKE_DIRECTORY "${EXTERNALCONTENT_SOURCE_PATH}")
 			endif()
 
 			#!TODO: Reduce complex git commands?
 
-			if(_EC_DOWNLOAD_DIRTY)
+			if(EXTERNALCONTENT_DIRTY)
 				# Do we need to clone or checkout?
-				if(NOT EXISTS "${_EC_SOURCE_PATH}/.git")
-					message(STATUS "[EC: ${_EC_NAME}] Cloning via git...")
+				if(NOT EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/.git")
+					message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Cloning via git...")
 					execute_process(
-						COMMAND "${GIT_EXECUTABLE}" ${_EC_GIT_CLONE_ARGS}
-						WORKING_DIRECTORY "${_EC_SOURCE_PATH}"
+						COMMAND "${GIT_EXECUTABLE}" ${EXTERNALCONTENT_GIT_CLONE_ARGS}
+						WORKING_DIRECTORY "${EXTERNALCONTENT_SOURCE_PATH}"
 						COMMAND_ECHO STDOUT
 					)
 				else()
-					message(STATUS "[EC: ${_EC_NAME}] Checking out via git...")
+					message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Checking out via git...")
 					execute_process(
-						COMMAND "${GIT_EXECUTABLE}" ${_EC_GIT_CHECKOUT_ARGS}
-						WORKING_DIRECTORY "${_EC_SOURCE_PATH}"
+						COMMAND "${GIT_EXECUTABLE}" ${EXTERNALCONTENT_GIT_CHECKOUT_ARGS}
+						WORKING_DIRECTORY "${EXTERNALCONTENT_SOURCE_PATH}"
 						COMMAND_ECHO STDOUT
 					)
 				endif()
 
 				# Write the hash to the cache file.
-				file(WRITE "${_EC_TEMP_PATH}/git-clone.sha3" "${_EC_GIT_CLONE_ARGS_HASH}")
-				file(WRITE "${_EC_TEMP_PATH}/git-checkout.sha3" "${_EC_GIT_CHECKOUT_ARGS_HASH}")
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/git-clone.sha3" "${EXTERNALCONTENT_GIT_CLONE_ARGS_HASH}")
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/git-checkout.sha3" "${EXTERNALCONTENT_GIT_CHECKOUT_ARGS_HASH}")
 			else()
-				message(STATUS "[EC: ${_EC_NAME}] Skipping download as nothing has changed.")
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping download as nothing has changed.")
 			endif()
 		else()
-			message(FATAL_ERROR "[EC: ${_EC_NAME}] Unknown download type but SKIP_DOWNLOAD is not set.")
+			message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] Unknown download type but SKIP_DOWNLOAD is not set.")
 		endif()
 	endif()
 
-	set(_EC_PATCH_DIRTY ${_EC_DOWNLOAD_DIRTY})
-	if(NOT _EC_SKIP_PATCH)
-		if(_EC_PATCH_FUNCTION)
-			cmake_language(EVAL CODE "${_EC_PATCH_FUNCTION}(\"${EC_TEMP_PATH}\" \"${_EC_SOURCE_PATH}\" \"${_EC_BINARY_PATH}\" \"${_EC_INSTALL_PATH}\")")
+	# Patch
+	if(NOT EXTERNALCONTENT_SKIP_PATCH)
+		if(EXTERNALCONTENT_PATCH_FUNCTION)
+			cmake_language(EVAL CODE "${EXTERNALCONTENT_PATCH_FUNCTION}(\"${EC_TEMP_PATH}\" \"${EXTERNALCONTENT_SOURCE_PATH}\" \"${EXTERNALCONTENT_BINARY_PATH}\" \"${EXTERNALCONTENT_INSTALL_PATH}\")")
 		endif()
 	endif()
 
 	# Configure
-	set(_EC_CONFIGURE_DIRTY ${_EC_PATCH_DIRTY})
-	if(NOT _EC_SKIP_CONFIGURE)
-		if(_EC_CONFIGURE_FUNCTION)
-			cmake_language(EVAL CODE "${_EC_CONFIGURE_FUNCTION}(\"${EC_TEMP_PATH}\" \"${_EC_SOURCE_PATH}\" \"${_EC_BINARY_PATH}\" \"${_EC_INSTALL_PATH}\")")
-		elseif(EXISTS "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}CMakeLists.txt")
+	if(NOT EXTERNALCONTENT_SKIP_CONFIGURE)
+		if(EXTERNALCONTENT_CONFIGURE_FUNCTION)
+			cmake_language(EVAL CODE "${EXTERNALCONTENT_CONFIGURE_FUNCTION}(\"${EC_TEMP_PATH}\" \"${EXTERNALCONTENT_SOURCE_PATH}\" \"${EXTERNALCONTENT_BINARY_PATH}\" \"${EXTERNALCONTENT_INSTALL_PATH}\")")
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}CMakeLists.txt")
 			# This is a CMake project.
 
-			set(_EC_CONFIGURE_ARGS
-				-S "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}"
-				-B "${_EC_BINARY_PATH}"
+			set(EXTERNALCONTENT_CONFIGURE_ARGS
+				-S "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}"
+				-B "${EXTERNALCONTENT_BINARY_PATH}"
 				-Wno-dev
 				--no-warn-unused-cli
-				--install-prefix "${_EC_INSTALL_PATH}"
-				${_EC_CONFIGURE_ARGS}
+				--install-prefix "${EXTERNALCONTENT_INSTALL_PATH}"
+				${EXTERNALCONTENT_CONFIGURE_ARGS}
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${_EC_CONFIGURE_ARGS}")
+			string(SHA3_512 EXTERNALCONTENT_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${EXTERNALCONTENT_CONFIGURE_ARGS}")
 
 			# Ensure we don't spawn useless sub-processes all the time.
-			if(EXISTS "${_EC_BINARY_PATH}/CMakeCache.txt")
-				if(EXISTS "${_EC_TEMP_PATH}/configure.sha3")
-					file(READ "${_EC_TEMP_PATH}/configure.sha3" _EC_HASH_CMP)
-					if(NOT (_EC_HASH_CMP STREQUAL _EC_CONFIGURE_ARGS_HASH))
-						set(_EC_CONFIGURE_DIRTY ON)
+			if(EXISTS "${EXTERNALCONTENT_BINARY_PATH}/CMakeCache.txt")
+				if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3")
+					file(READ "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3" EXTERNALCONTENT_HASH_CMP)
+					if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_CONFIGURE_ARGS_HASH))
+						set(EXTERNALCONTENT_DIRTY ON)
 					endif()
+				else()
+					set(EXTERNALCONTENT_DIRTY ON)
 				endif()
 			else()
-				set(_EC_CONFIGURE_DIRTY ON)
+				set(EXTERNALCONTENT_DIRTY ON)
 			endif()
 
 			# Configure & Generate
-			if(_EC_CONFIGURE_DIRTY)
+			if(EXTERNALCONTENT_DIRTY)
 				execute_process(
-					COMMAND "cmake" ${_EC_CONFIGURE_ARGS}
-					WORKING_DIRECTORY "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}"
+					COMMAND "cmake" ${EXTERNALCONTENT_CONFIGURE_ARGS}
+					WORKING_DIRECTORY "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}"
 					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
-				file(WRITE "${_EC_TEMP_PATH}/configure.sha3" "${_EC_CONFIGURE_ARGS_HASH}")
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3" "${EXTERNALCONTENT_CONFIGURE_ARGS_HASH}")
 			else()
-				message(STATUS "[EC: ${_EC_NAME}] Skipping configure as nothing has changed.")
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping configure as nothing has changed.")
 			endif()
-		elseif(EXISTS "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}meson.build")
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}meson.build")
 			# This is a meson project.
 
-			set(_EC_CONFIGURE_ARGS
+			set(EXTERNALCONTENT_CONFIGURE_ARGS
 				setup build
-				--prefix "${_EC_INSTALL_PATH}"
-				${_EC_CONFIGURE_ARGS}
+				--prefix "${EXTERNALCONTENT_INSTALL_PATH}"
+				${EXTERNALCONTENT_CONFIGURE_ARGS}
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${_EC_CONFIGURE_ARGS}")
+			string(SHA3_512 EXTERNALCONTENT_CONFIGURE_ARGS_HASH "${EC_TEMP_PATH} ${EXTERNALCONTENT_CONFIGURE_ARGS}")
 
-			# Ensure we don't spawn useless sub-processes all the time.
-			if(EXISTS "${_EC_BINARY_PATH}/CMakeCache.txt")
-				if(EXISTS "${_EC_TEMP_PATH}/configure.sha3")
-					file(READ "${_EC_TEMP_PATH}/configure.sha3" _EC_HASH_CMP)
-					if(NOT (_EC_HASH_CMP STREQUAL _EC_CONFIGURE_ARGS_HASH))
-						set(_EC_CONFIGURE_DIRTY ON)
+			# Test if there were any changes only if we're not already in a dirty state.
+			if(NOT EXTERNALCONTENT_DIRTY)
+				# Ensure we don't spawn useless sub-processes all the time.
+				if(EXISTS "${EXTERNALCONTENT_BINARY_PATH}/CMakeCache.txt")
+					if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3")
+						file(READ "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3" EXTERNALCONTENT_HASH_CMP)
+						if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_CONFIGURE_ARGS_HASH))
+							set(EXTERNALCONTENT_DIRTY ON)
+						endif()
+					else()
+						set(EXTERNALCONTENT_DIRTY ON)
 					endif()
+				else()
+					set(EXTERNALCONTENT_DIRTY ON)
 				endif()
-			else()
-				set(_EC_CONFIGURE_DIRTY ON)
 			endif()
 
 			# Configure & Generate
-			if(_EC_CONFIGURE_DIRTY)
+			if(EXTERNALCONTENT_DIRTY)
 				execute_process(
-					COMMAND "meson" ${_EC_CONFIGURE_ARGS}
-					WORKING_DIRECTORY "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}"
+					COMMAND "meson" ${EXTERNALCONTENT_CONFIGURE_ARGS}
+					WORKING_DIRECTORY "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}"
 					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
-				file(WRITE "${_EC_TEMP_PATH}/configure.sha3" "${_EC_CONFIGURE_ARGS_HASH}")
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3" "${EXTERNALCONTENT_CONFIGURE_ARGS_HASH}")
 			else()
-				message(STATUS "[EC: ${_EC_NAME}] Skipping configure as nothing has changed.")
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping configure as nothing has changed.")
 			endif()
 		else()
-			message(FATAL_ERROR "[EC: ${_EC_NAME}] We don't know how to handle this build system yet. Consider using CONFIGURE_FUNCTION or SKIP_CONFIGURE.")
+			message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] We don't know how to handle this build system yet. Consider using CONFIGURE_FUNCTION or SKIP_CONFIGURE.")
 		endif()
 	endif()
 
 	# Build
-	set(_EC_BUILD_DIRTY ${_EC_CONFIGURE_DIRTY})
-	if(NOT _EC_SKIP_BUILD)
-		if(_EC_BUILD_FUNCTION)
-			cmake_language(EVAL CODE "${_EC_BUILD_FUNCTION}(\"${EC_TEMP_PATH}\" \"${_EC_SOURCE_PATH}\" \"${_EC_BINARY_PATH}\" \"${_EC_INSTALL_PATH}\")")
-		elseif(EXISTS "${_EC_SOURCE_PATH}/CMakeLists.txt")
+	if(NOT EXTERNALCONTENT_SKIP_BUILD)
+		if(EXTERNALCONTENT_BUILD_FUNCTION)
+			cmake_language(EVAL CODE "${EXTERNALCONTENT_BUILD_FUNCTION}(\"${EC_TEMP_PATH}\" \"${EXTERNALCONTENT_SOURCE_PATH}\" \"${EXTERNALCONTENT_BINARY_PATH}\" \"${EXTERNALCONTENT_INSTALL_PATH}\")")
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/CMakeLists.txt")
 			# This is a CMake project.
 
-			set(_EC_BUILD_ARGS
-				"--build" "${_EC_BINARY_PATH}"
-				${_EC_BUILD_ARGS}
+			set(EXTERNALCONTENT_BUILD_ARGS
+				"--build" "${EXTERNALCONTENT_BINARY_PATH}"
+				${EXTERNALCONTENT_BUILD_ARGS}
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_BUILD_ARGS}")
+			string(SHA3_512 EXTERNALCONTENT_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${EXTERNALCONTENT_SOURCE_PATH} ${EXTERNALCONTENT_BINARY_PATH} ${EXTERNALCONTENT_INSTALL_PATH} ${EXTERNALCONTENT_BUILD_ARGS}")
 
-			# Ensure we don't spawn useless sub-processes all the time.
-			if(EXISTS "${_EC_TEMP_PATH}/build.sha3")
-				file(READ "${_EC_TEMP_PATH}/build.sha3" _EC_HASH_CMP)
-				if(NOT (_EC_HASH_CMP STREQUAL _EC_BUILD_ARGS_HASH))
-					set(_EC_BUILD_DIRTY ON)
+			# Test if there were any changes only if we're not already in a dirty state.
+			if(NOT EXTERNALCONTENT_DIRTY)
+				# Ensure we don't spawn useless sub-processes all the time.
+				if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/build.sha3")
+					file(READ "${EXTERNALCONTENT_TEMP_PATH}/build.sha3" EXTERNALCONTENT_HASH_CMP)
+					if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_BUILD_ARGS_HASH))
+						set(EXTERNALCONTENT_DIRTY ON)
+					endif()
+				else()
+					set(EXTERNALCONTENT_DIRTY ON)
 				endif()
-			else()
-				set(_EC_BUILD_DIRTY ON)
 			endif()
 
 			# Build
-			if(_EC_BUILD_DIRTY)
+			if(EXTERNALCONTENT_DIRTY)
 				execute_process(
-					COMMAND "cmake" ${_EC_BUILD_ARGS}
-					WORKING_DIRECTORY "${_EC_BINARY_PATH}"
+					COMMAND "cmake" ${EXTERNALCONTENT_BUILD_ARGS}
+					WORKING_DIRECTORY "${EXTERNALCONTENT_BINARY_PATH}"
 					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
-				file(WRITE "${_EC_TEMP_PATH}/build.sha3" "${_EC_BUILD_ARGS_HASH}")
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/build.sha3" "${EXTERNALCONTENT_BUILD_ARGS_HASH}")
 			else()
-				message(STATUS "[EC: ${_EC_NAME}] Skipping build as nothing has changed.")
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping build as nothing has changed.")
 			endif()
-		elseif(EXISTS "${_EC_SOURCE_PATH}/${_EC_CONFIGURE_SUFFIX}meson.build")
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}meson.build")
 			# This is a meson project.
 
-			set(_EC_BUILD_ARGS
-				"--build" "${_EC_BINARY_PATH}"
-				${_EC_BUILD_ARGS}
+			set(EXTERNALCONTENT_BUILD_ARGS
+				"--build" "${EXTERNALCONTENT_BINARY_PATH}"
+				${EXTERNALCONTENT_BUILD_ARGS}
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_BUILD_ARGS}")
+			string(SHA3_512 EXTERNALCONTENT_BUILD_ARGS_HASH "${EC_TEMP_PATH} ${EXTERNALCONTENT_SOURCE_PATH} ${EXTERNALCONTENT_BINARY_PATH} ${EXTERNALCONTENT_INSTALL_PATH} ${EXTERNALCONTENT_BUILD_ARGS}")
 
-			# Ensure we don't spawn useless sub-processes all the time.
-			if(EXISTS "${_EC_TEMP_PATH}/build.sha3")
-				file(READ "${_EC_TEMP_PATH}/build.sha3" _EC_HASH_CMP)
-				if(NOT (_EC_HASH_CMP STREQUAL _EC_BUILD_ARGS_HASH))
-					set(_EC_BUILD_DIRTY ON)
+			# Test if there were any changes only if we're not already in a dirty state.
+			if(NOT EXTERNALCONTENT_DIRTY)
+				# Ensure we don't spawn useless sub-processes all the time.
+				if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/build.sha3")
+					file(READ "${EXTERNALCONTENT_TEMP_PATH}/build.sha3" EXTERNALCONTENT_HASH_CMP)
+					if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_BUILD_ARGS_HASH))
+						set(EXTERNALCONTENT_DIRTY ON)
+					endif()
+				else()
+					set(EXTERNALCONTENT_DIRTY ON)
 				endif()
-			else()
-				set(_EC_BUILD_DIRTY ON)
 			endif()
 
 			# Build
-			if(_EC_BUILD_DIRTY)
+			if(EXTERNALCONTENT_DIRTY)
 				execute_process(
-					COMMAND "meson" ${_EC_BUILD_ARGS}
-					WORKING_DIRECTORY "${_EC_BINARY_PATH}"
+					COMMAND "meson" ${EXTERNALCONTENT_BUILD_ARGS}
+					WORKING_DIRECTORY "${EXTERNALCONTENT_BINARY_PATH}"
 					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
-				file(WRITE "${_EC_TEMP_PATH}/build.sha3" "${_EC_BUILD_ARGS_HASH}")
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/build.sha3" "${EXTERNALCONTENT_BUILD_ARGS_HASH}")
 			else()
-				message(STATUS "[EC: ${_EC_NAME}] Skipping build as nothing has changed.")
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping build as nothing has changed.")
 			endif()
 		else()
-			message(FATAL_ERROR "[EC: ${_EC_NAME}] We don't know how to handle this build system yet. Consider using BUILD_FUNCTION or SKIP_BUILD.")
+			message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] We don't know how to handle this build system yet. Consider using BUILD_FUNCTION or SKIP_BUILD.")
 		endif()
 	endif()
 
 	# Install
-	set(_EC_INSTALL_DIRTY ${_EC_CONFIGURE_DIRTY})
-	if(NOT _EC_SKIP_INSTALL)
-		if(_EC_INSTALL_FUNCTION)
-			cmake_language(EVAL CODE "${_EC_INSTALL_FUNCTION}(\"${EC_TEMP_PATH}\" \"${_EC_SOURCE_PATH}\" \"${_EC_BINARY_PATH}\" \"${_EC_INSTALL_PATH}\")")
-		elseif(EXISTS "${_EC_SOURCE_PATH}/CMakeLists.txt")
+	if(NOT EXTERNALCONTENT_SKIP_INSTALL)
+		if(EXTERNALCONTENT_INSTALL_FUNCTION)
+			cmake_language(EVAL CODE "${EXTERNALCONTENT_INSTALL_FUNCTION}(\"${EC_TEMP_PATH}\" \"${EXTERNALCONTENT_SOURCE_PATH}\" \"${EXTERNALCONTENT_BINARY_PATH}\" \"${EXTERNALCONTENT_INSTALL_PATH}\")")
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/CMakeLists.txt")
 			# This is a CMake project.
 
-			set(_EC_CMAKE_ARGS
-				--install "${_EC_BINARY_PATH}"
-				--prefix "${_EC_INSTALL_PATH}"
-				${_EC_INSTALL_ARGS}
+			set(EXTERNALCONTENT_CMAKE_ARGS
+				--install "${EXTERNALCONTENT_BINARY_PATH}"
+				--prefix "${EXTERNALCONTENT_INSTALL_PATH}"
+				${EXTERNALCONTENT_INSTALL_ARGS}
 			)
 
 			# Hash the given options.
-			string(SHA3_512 _EC_INSTALL_ARGS_HASH "${EC_TEMP_PATH} ${_EC_SOURCE_PATH} ${_EC_BINARY_PATH} ${_EC_INSTALL_PATH} ${_EC_CMAKE_ARGS}")
+			string(SHA3_512 EXTERNALCONTENT_INSTALL_ARGS_HASH "${EC_TEMP_PATH} ${EXTERNALCONTENT_SOURCE_PATH} ${EXTERNALCONTENT_BINARY_PATH} ${EXTERNALCONTENT_INSTALL_PATH} ${EXTERNALCONTENT_CMAKE_ARGS}")
 
-			# Ensure we don't spawn useless sub-processes all the time.
-			if(EXISTS "${_EC_TEMP_PATH}/install.sha3")
-				file(READ "${_EC_TEMP_PATH}/install.sha3" _EC_HASH_CMP)
-				if(NOT (_EC_HASH_CMP STREQUAL _EC_INSTALL_ARGS_HASH))
-					set(_EC_INSTALL_DIRTY ON)
+			# Test if there were any changes only if we're not already in a dirty state.
+			if(NOT EXTERNALCONTENT_DIRTY)
+				# Ensure we don't spawn useless sub-processes all the time.
+				if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/install.sha3")
+					file(READ "${EXTERNALCONTENT_TEMP_PATH}/install.sha3" EXTERNALCONTENT_HASH_CMP)
+					if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_INSTALL_ARGS_HASH))
+						set(EXTERNALCONTENT_DIRTY ON)
+					endif()
+				else()
+					set(EXTERNALCONTENT_DIRTY ON)
 				endif()
-			else()
-				set(_EC_INSTALL_DIRTY ON)
+
+				# Ensure that we actually have the files installed too.
+				if(NOT EXISTS "${EXTERNALCONTENT_INSTALL_PATH}")
+					set(EXTERNALCONTENT_DIRTY ON)
+				endif()
 			endif()
 
 			# Install
-			if(_EC_INSTALL_DIRTY)
+			if(EXTERNALCONTENT_DIRTY)
 				execute_process(
-					COMMAND "cmake" ${_EC_CMAKE_ARGS}
-					WORKING_DIRECTORY "${_EC_BINARY_PATH}"
+					COMMAND "cmake" ${EXTERNALCONTENT_CMAKE_ARGS}
+					WORKING_DIRECTORY "${EXTERNALCONTENT_BINARY_PATH}"
 					COMMAND_ECHO STDOUT
 				)
 
 				# Write the hash to the cache file.
-				file(WRITE "${_EC_TEMP_PATH}/install.sha3" "${_EC_INSTALL_ARGS_HASH}")
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/install.sha3" "${EXTERNALCONTENT_INSTALL_ARGS_HASH}")
 			else()
-				message(STATUS "[EC: ${_EC_NAME}] Skipping install as nothing has changed.")
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping install as nothing has changed.")
 			endif()
 		else()
-			message(FATAL_ERROR "[EC: ${_EC_NAME}] We don't know how to handle this install system yet. Consider using INSTALL_FUNCTION or SKIP_INSTALL.")
+			message(FATAL_ERROR "[EC: ${EXTERNALCONTENT_NAME}] We don't know how to handle this install system yet. Consider using INSTALL_FUNCTION or SKIP_INSTALL.")
 		endif()
 	endif()
-
-	set(${_EC_NAME}_SOURCE_PATH "${_EC_SOURCE_PATH}" PARENT_SCOPE)
-	set(${_EC_NAME}_BINARY_PATH "${_EC_BINARY_PATH}" PARENT_SCOPE)
-	set(${_EC_NAME}_INSTALL_PATH "${_EC_INSTALL_PATH}" PARENT_SCOPE)
 endfunction()
