@@ -11,6 +11,9 @@ on:
       - 'tools/**'
       - 'LICENSE'
 
+permissions:
+  contents: write
+
 jobs:
   docs:
     name: "Generate Documentation"
@@ -25,13 +28,13 @@ jobs:
         git config --global pull.rebase true
 
     - name: "Clone"
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: 'recursive'
         fetch-depth: 0
 
     - name: "Clone Documentation"
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:      
         ref: 'documentation'
         path: 'build/docs/html'
@@ -68,14 +71,15 @@ jobs:
       shell: bash
       run: |
         pushd build/docs/html
+        touch .nojekyll
         git add .
         git --no-pager diff --patch --minimal HEAD --
         git update-index --refresh
         if ! git diff-index --quiet HEAD --; then
           git commit -a -m "${{ github.sha }}"
 
-          # Only push from master branch.
-          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+          # Only push from the default branch.
+          if [[ "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" ]]; then
             git push
             echo "Documentation has been updated!"
           else
