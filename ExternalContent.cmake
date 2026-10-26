@@ -526,7 +526,7 @@ function(ExternalContent)
 			# This is a meson project.
 
 			set(EXTERNALCONTENT_CONFIGURE_ARGS
-				setup build
+				setup "${EXTERNALCONTENT_BINARY_PATH}" "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}"
 				--prefix "${EXTERNALCONTENT_INSTALL_PATH}"
 				${EXTERNALCONTENT_CONFIGURE_ARGS}
 			)
@@ -537,7 +537,7 @@ function(ExternalContent)
 			# Test if there were any changes only if we're not already in a dirty state.
 			if(NOT EXTERNALCONTENT_DIRTY)
 				# Ensure we don't spawn useless sub-processes all the time.
-				if(EXISTS "${EXTERNALCONTENT_BINARY_PATH}/CMakeCache.txt")
+				if(EXISTS "${EXTERNALCONTENT_BINARY_PATH}/meson-private/coredata.dat")
 					if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3")
 						file(READ "${EXTERNALCONTENT_TEMP_PATH}/configure.sha3" EXTERNALCONTENT_HASH_CMP)
 						if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_CONFIGURE_ARGS_HASH))
@@ -553,6 +553,11 @@ function(ExternalContent)
 
 			# Configure & Generate
 			if(EXTERNALCONTENT_DIRTY)
+				# Meson refuses to set up an existing build directory unless asked to reconfigure it.
+				if(EXISTS "${EXTERNALCONTENT_BINARY_PATH}/meson-private/coredata.dat")
+					list(APPEND EXTERNALCONTENT_CONFIGURE_ARGS --reconfigure)
+				endif()
+
 				execute_process(
 					COMMAND "meson" ${EXTERNALCONTENT_CONFIGURE_ARGS}
 					WORKING_DIRECTORY "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}"
@@ -573,7 +578,7 @@ function(ExternalContent)
 	if(NOT EXTERNALCONTENT_SKIP_BUILD)
 		if(EXTERNALCONTENT_BUILD_FUNCTION)
 			cmake_language(EVAL CODE "${EXTERNALCONTENT_BUILD_FUNCTION}(\"${EC_TEMP_PATH}\" \"${EXTERNALCONTENT_SOURCE_PATH}\" \"${EXTERNALCONTENT_BINARY_PATH}\" \"${EXTERNALCONTENT_INSTALL_PATH}\")")
-		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/CMakeLists.txt")
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}CMakeLists.txt")
 			# This is a CMake project.
 
 			set(EXTERNALCONTENT_BUILD_ARGS
@@ -614,7 +619,7 @@ function(ExternalContent)
 			# This is a meson project.
 
 			set(EXTERNALCONTENT_BUILD_ARGS
-				"--build" "${EXTERNALCONTENT_BINARY_PATH}"
+				compile -C "${EXTERNALCONTENT_BINARY_PATH}"
 				${EXTERNALCONTENT_BUILD_ARGS}
 			)
 
@@ -656,7 +661,7 @@ function(ExternalContent)
 	if(NOT EXTERNALCONTENT_SKIP_INSTALL)
 		if(EXTERNALCONTENT_INSTALL_FUNCTION)
 			cmake_language(EVAL CODE "${EXTERNALCONTENT_INSTALL_FUNCTION}(\"${EC_TEMP_PATH}\" \"${EXTERNALCONTENT_SOURCE_PATH}\" \"${EXTERNALCONTENT_BINARY_PATH}\" \"${EXTERNALCONTENT_INSTALL_PATH}\")")
-		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/CMakeLists.txt")
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}CMakeLists.txt")
 			# This is a CMake project.
 
 			set(EXTERNALCONTENT_CMAKE_ARGS
@@ -690,6 +695,49 @@ function(ExternalContent)
 			if(EXTERNALCONTENT_DIRTY)
 				execute_process(
 					COMMAND "cmake" ${EXTERNALCONTENT_CMAKE_ARGS}
+					WORKING_DIRECTORY "${EXTERNALCONTENT_BINARY_PATH}"
+					COMMAND_ECHO STDOUT
+				)
+
+				# Write the hash to the cache file.
+				file(WRITE "${EXTERNALCONTENT_TEMP_PATH}/install.sha3" "${EXTERNALCONTENT_INSTALL_ARGS_HASH}")
+			else()
+				message(STATUS "[EC: ${EXTERNALCONTENT_NAME}] Skipping install as nothing has changed.")
+			endif()
+		elseif(EXISTS "${EXTERNALCONTENT_SOURCE_PATH}/${EXTERNALCONTENT_BUILDSYSTEM_SUFFIX}meson.build")
+			# This is a meson project.
+
+			# Meson takes the install prefix from the configure step.
+			set(EXTERNALCONTENT_MESON_ARGS
+				install -C "${EXTERNALCONTENT_BINARY_PATH}"
+				${EXTERNALCONTENT_INSTALL_ARGS}
+			)
+
+			# Hash the given options.
+			string(SHA3_512 EXTERNALCONTENT_INSTALL_ARGS_HASH "${EC_TEMP_PATH} ${EXTERNALCONTENT_SOURCE_PATH} ${EXTERNALCONTENT_BINARY_PATH} ${EXTERNALCONTENT_INSTALL_PATH} ${EXTERNALCONTENT_MESON_ARGS}")
+
+			# Test if there were any changes only if we're not already in a dirty state.
+			if(NOT EXTERNALCONTENT_DIRTY)
+				# Ensure we don't spawn useless sub-processes all the time.
+				if(EXISTS "${EXTERNALCONTENT_TEMP_PATH}/install.sha3")
+					file(READ "${EXTERNALCONTENT_TEMP_PATH}/install.sha3" EXTERNALCONTENT_HASH_CMP)
+					if(NOT (EXTERNALCONTENT_HASH_CMP STREQUAL EXTERNALCONTENT_INSTALL_ARGS_HASH))
+						set(EXTERNALCONTENT_DIRTY ON)
+					endif()
+				else()
+					set(EXTERNALCONTENT_DIRTY ON)
+				endif()
+
+				# Ensure that we actually have the files installed too.
+				if(NOT EXISTS "${EXTERNALCONTENT_INSTALL_PATH}")
+					set(EXTERNALCONTENT_DIRTY ON)
+				endif()
+			endif()
+
+			# Install
+			if(EXTERNALCONTENT_DIRTY)
+				execute_process(
+					COMMAND "meson" ${EXTERNALCONTENT_MESON_ARGS}
 					WORKING_DIRECTORY "${EXTERNALCONTENT_BINARY_PATH}"
 					COMMAND_ECHO STDOUT
 				)
