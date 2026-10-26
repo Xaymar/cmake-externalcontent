@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'version'
+project = 'ExternalContent'
 copyright = "2026, Narta Xaymar Dirks"
 author = "Narta Xaymar Dirks"
 version = "1.0.0"
@@ -39,8 +39,8 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    "Thumbs.db"
-    ".DS_Store"
+    "Thumbs.db",
+    ".DS_Store",
 ]
 
 # -- Options for HTML output -------------------------------------------------
