@@ -38,6 +38,18 @@ ExternalContent(
 ExternalContentTest_Expect("url" "${url_TEMP_PATH}/zlib-1.3.1.tar.gz")
 ExternalContentTest_Expect("url" "${url_SOURCE_PATH}/zlib-1.3.1/zlib.h")
 
+# Skip download: Use the files extracted by the "url" test as an existing source.
+ExternalContent(
+	NAME "local"
+	SKIP_DOWNLOAD
+	SOURCE_PATH "${url_SOURCE_PATH}/zlib-1.3.1"
+	CONFIGURE_ARGS
+		-DCMAKE_BUILD_TYPE=Release
+		-DCMAKE_POLICY_VERSION_MINIMUM=3.5
+)
+ExternalContentTest_Expect("local" "${local_BINARY_PATH}/CMakeCache.txt")
+ExternalContentTest_Expect("local" "${local_INSTALL_PATH}/include/zlib.h")
+
 # Git: Clone a tag, then configure, build and install it as a CMake project.
 ExternalContent(
 	NAME "git"
