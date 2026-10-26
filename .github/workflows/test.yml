@@ -3,17 +3,18 @@ name: Automated Testing
 on:
   push:
     branches:
-      - '*'
+      - '**'
       - '!documentation'
     paths:
       - '.github/workflows/test.yml'
+      - 'ExternalContent.cmake'
       - 'tests/**'
-      - 'version.cmake'
   pull_request:
     paths:
       - '.github/workflows/test.yml'
+      - 'ExternalContent.cmake'
       - 'tests/**'
-      - 'version.cmake'
+  workflow_dispatch:
 
 jobs:
   test:
@@ -21,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: "Clone"
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
         fetch-depth: 0
@@ -29,10 +30,22 @@ jobs:
     - name: "Install Prerequisites"
       shell: bash
       run: |
-        sudo apt-get install build-essential cmake
+        sudo apt-get install build-essential
+        # ExternalContent requires CMake 4.2 or newer.
+        pipx install 'cmake>=4.2,<5'
+        echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
     - name: "Run Tests"
       shell: bash
       run: |
+        cmake --version
         cmake -Htests -Bbuild/tests
 
+    - name: "Run Tests again (nothing should change)"
+      shell: bash
+      run: |
+        cmake -Htests -Bbuild/tests | tee build/tests-rerun.log
+        if grep -qE "Downloading|Cloning|Checking out" build/tests-rerun.log; then
+          echo "::error::Second run downloaded content again."
+          exit 1
+        fi
