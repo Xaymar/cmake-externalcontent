@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ExternalContent &mdash; version 1.0.0 documentation</title>
+  <title>ExternalContent &mdash; ExternalContent 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
@@ -30,7 +30,7 @@
           
           
           <a href="#" class="icon icon-home">
-            version
+            ExternalContent
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -92,6 +92,7 @@
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#exports">Exports</a></li>
 </ul>
 </li>
 </ul>
@@ -102,7 +103,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">version</a>
+          <a href="#">ExternalContent</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -168,7 +169,7 @@
 <h3>General Options<a class="headerlink" href="#general-options" title="Link to this heading"></a></h3>
 <section id="name">
 <span id="id1"></span><h4>NAME<a class="headerlink" href="#name" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">NAME</span><span class="w"> </span><span class="s2">&quot;&lt;name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">NAME</span><span class="w"> </span><span class="s2">"&lt;name&gt;"</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The unique identifier for this external content which must be a valid directory name and also a valid target name. Will also be used to store some output variables.</p>
@@ -178,28 +179,28 @@
 <h3>Paths<a class="headerlink" href="#paths" title="Link to this heading"></a></h3>
 <section id="temp-path">
 <span id="id2"></span><h4>TEMP_PATH<a class="headerlink" href="#temp-path" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">TEMP_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">TEMP_PATH</span><span class="w"> </span><span class="s2">"&lt;path&gt;"</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Optional. Specifies where we should store any temporary files for this external content. It’s recommended to leave this be.</p>
 </section>
 <section id="source-path">
 <span id="id3"></span><h4>SOURCE_PATH:<a class="headerlink" href="#source-path" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">SOURCE_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">SOURCE_PATH</span><span class="w"> </span><span class="s2">"&lt;path&gt;"</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Optional. Specifies where the source should be extracted to. Can be used with <a class="reference internal" href="#skip-download">SKIP_DOWNLOAD</a> to specify existing code as external content.</p>
 </section>
 <section id="binary-path">
 <span id="id4"></span><h4>BINARY_PATH:<a class="headerlink" href="#binary-path" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">BINARY_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">BINARY_PATH</span><span class="w"> </span><span class="s2">"&lt;path&gt;"</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Optional. Specifies where the build files should be located.</p>
 </section>
 <section id="install-path">
 <span id="id5"></span><h4>INSTALL_PATH:<a class="headerlink" href="#install-path" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">INSTALL_PATH</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">INSTALL_PATH</span><span class="w"> </span><span class="s2">"&lt;path&gt;"</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Optional. Specifies where the external content should be installed to.</p>
@@ -278,7 +279,7 @@
 </section>
 <section id="configure-function">
 <span id="id14"></span><h4>CONFIGURE_FUNCTION:<a class="headerlink" href="#configure-function" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">CONFIGURE_FUNCTION</span><span class="w"> </span><span class="s2">&quot;&lt;function-name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">CONFIGURE_FUNCTION</span><span class="w"> </span><span class="s">&lt;function-name&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Optional. Specify a custom function to be used to configure this external content instead of the default handler. The function is expected to have the following signature:</p>
@@ -307,7 +308,7 @@
 </section>
 <section id="build-function">
 <span id="id17"></span><h4>BUILD_FUNCTION:<a class="headerlink" href="#build-function" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">BUILD_FUNCTION</span><span class="w"> </span><span class="s2">&quot;&lt;function-name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">BUILD_FUNCTION</span><span class="w"> </span><span class="s">&lt;function-name&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Optional. Specify a custom function to be used to build this external content instead of the default handler. The function is expected to have the following signature:</p>
@@ -336,7 +337,7 @@
 </section>
 <section id="install-function">
 <span id="id20"></span><h4>INSTALL_FUNCTION:<a class="headerlink" href="#install-function" title="Link to this heading"></a></h4>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">INSTALL_FUNCTION</span><span class="w"> </span><span class="s2">&quot;&lt;function-name&gt;&quot;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">ExternalContent</span><span class="p">(</span><span class="s">...</span><span class="w"> </span><span class="s">INSTALL_FUNCTION</span><span class="w"> </span><span class="s">&lt;function-name&gt;</span><span class="w"> </span><span class="s">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Optional. Specify a custom function to be used to install this external content instead of the default handler. The function is expected to have the following signature:</p>
@@ -354,6 +355,12 @@
 <p>Optional. Arguments to pass to the default install handler. Can be specified multiple times or have several options chained after another.</p>
 </section>
 </section>
+</section>
+<section id="exports">
+<h2>Exports<a class="headerlink" href="#exports" title="Link to this heading"></a></h2>
+<p>&lt;name&gt;_SOURCE_PATH
+&lt;name&gt;_BINARY_PATH
+&lt;name&gt;_INSTALL_PATH</p>
 </section>
 </section>
 
