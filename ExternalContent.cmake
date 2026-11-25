@@ -18,8 +18,7 @@
 # Goals:
 # - Never pollute the parent cache unless absolutely needed.
 
-#!TODO: Add support for older CMake versions.
-cmake_minimum_required(VERSION 4.2.0)
+cmake_minimum_required(VERSION 3.21)
 
 function(InitializeExternalContent)
 endfunction()

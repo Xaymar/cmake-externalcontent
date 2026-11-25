@@ -14,7 +14,7 @@
 # configure means every test passed. Configure twice to also test that nothing
 # is downloaded again when nothing changed.
 
-cmake_minimum_required(VERSION 4.2.0)
+cmake_minimum_required(VERSION 3.21)
 project(ExternalContentTests LANGUAGES NONE)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/../ExternalContent.cmake")
